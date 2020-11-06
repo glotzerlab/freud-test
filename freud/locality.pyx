@@ -1154,17 +1154,28 @@ cdef class Voronoi(_Compute):
     def __dealloc__(self):
         del self.thisptr
 
-    def compute(self, system):
+    def compute(self, system, radii=None):
         R"""Compute Voronoi diagram.
 
         Args:
             system:
                 Any object that is a valid argument to
                 :class:`freud.locality.NeighborQuery.from_system`.
+            radii ((:math:`N_{points}`) :class:`numpy.ndarray`):
+                An array of radii for each point in the system. If provided,
+                the power diagram (also called the radical Voronoi
+                tessellation) will be computed (Default value = :code:`None`,
+                which gives the Voronoi diagram).
         """
         cdef NeighborQuery nq = NeighborQuery.from_system(system)
-        self.thisptr.compute(nq.get_ptr())
         self._box = nq.box
+        cdef double* l_radii_ptr = NULL
+        cdef double[::1] l_radii
+        if radii is not None:
+            l_radii = freud.util._convert_array(
+                radii, shape=(len(nq.points),), dtype=np.float64)
+            l_radii_ptr = &l_radii[0]
+        self.thisptr.compute(nq.get_ptr(), l_radii_ptr)
         return self
 
     @_Compute._computed_property

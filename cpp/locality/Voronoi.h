@@ -19,7 +19,7 @@ public:
     // default constructor
     Voronoi() : m_neighbor_list(std::make_shared<NeighborList>()) {}
 
-    void compute(const freud::locality::NeighborQuery* nq);
+    void compute(const freud::locality::NeighborQuery* nq, const double* radii = nullptr);
 
     std::shared_ptr<NeighborList> getNeighborList() const
     {
