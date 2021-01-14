@@ -10,3 +10,7 @@
 [submodule "doc/source/examples"]
 	path = doc/source/gettingstarted/examples
 	url = https://github.com/glotzerlab/freud-examples.git
+[submodule "extern/polyhedral-template-matching"]
+	path = extern/polyhedral-template-matching
+	url = https://github.com/pmla/polyhedral-template-matching.git
+	branch = master
