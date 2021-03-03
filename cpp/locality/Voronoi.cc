@@ -12,6 +12,29 @@
     \brief Computes Voronoi neighbors for a set of points.
 */
 
+void  getFaceVerticesOfFace( std::vector<int>& f, int k, std::vector<int>& vertexList)
+{
+    vertexList.clear();
+
+    // iterate through face-vertices vector bracketed
+    // (number of vertices for face 1) vertex 1 ID face 1, vertex 2 ID face 1 , ... (number of vertices for face 2, ...
+    unsigned long long index = 0;
+    // we are at face k, so we have to iterate through the face vertices vector up to k
+    for (unsigned long long cc = 0; cc < k; cc++){
+       unsigned long long b = f[index] + 1;
+       index = index + b;    // how many vertices does the current face (index) have?
+    }
+    // iterate index "number of vertices of this face" forward
+    unsigned long long b = f[index];
+    for (unsigned long long bb = 0; bb < b; bb++)
+    {
+    	index++;
+	int vertexindex = f[index];
+	vertexList.push_back(vertexindex);
+    }
+}
+
+
 namespace freud { namespace locality {
 
 // Voronoi calculations should be kept in double precision.
@@ -21,6 +44,8 @@ void Voronoi::compute(const freud::locality::NeighborQuery* nq)
     auto n_points = nq->getNPoints();
 
     m_polytopes.resize(n_points);
+    m_faces.resize(n_points);
+    m_neighbors.resize(n_points);
     m_volumes.prepare(n_points);
 
     vec3<float> boxLatticeVectors[3];
@@ -129,6 +154,8 @@ void Voronoi::compute(const freud::locality::NeighborQuery* nq)
             // Save cell volume
             m_volumes[query_point_id] = cell.volume();
 
+            std::vector<std::vector< vec3<double> > > poly_vertices;
+            std::vector< int > face_neighbor;
             // Compute cell neighbors
             size_t neighbor_counter(0);
             for (auto neighbor_iterator = neighbors.begin(); neighbor_iterator != neighbors.end();
@@ -156,7 +183,29 @@ void Voronoi::compute(const freud::locality::NeighborQuery* nq)
                 const float distance(std::sqrt(dot(rij, rij)));
 
                 bonds.push_back(NeighborBond(query_point_id, point_id, distance, weight));
+
+                std::vector<int> facevertexlist;
+                getFaceVerticesOfFace(face_vertices, neighbor_counter, facevertexlist);
+                std::vector< vec3<double> > face_vertices;
+                for (
+                    auto face_vertex = facevertexlist.begin();
+                    face_vertex != facevertexlist.end();
+                    ++face_vertex)
+                {
+                    int vertexindex = (*face_vertex);
+                    double vert_x = system_vertices[vertexindex].x;
+                    double vert_y = system_vertices[vertexindex].y;
+                    double vert_z = system_vertices[vertexindex].z;
+
+		    vec3<double> f_vertex = vec3<double>(vert_x, vert_y, vert_z);
+                    face_vertices.push_back(f_vertex);
+                }
+                poly_vertices.push_back(face_vertices);
+                face_neighbor.push_back(point_id);
+
             }
+            m_faces[query_point_id] = poly_vertices;
+            m_neighbors[query_point_id] = face_neighbor;
 
         } while (voronoi_loop.inc());
     }

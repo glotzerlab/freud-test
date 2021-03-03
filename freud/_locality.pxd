@@ -136,6 +136,8 @@ cdef extern from "Voronoi.h" namespace "freud::locality":
     cdef cppclass Voronoi:
         Voronoi()
         void compute(const NeighborQuery*) nogil except +
+        vector[vector[int]] getNeighbors() const
         vector[vector[vec3[double]]] getPolytopes() const
+        vector[vector[vector[vec3[double]]]] getFaces() const
         const freud.util.ManagedArray[double] &getVolumes() const
         shared_ptr[NeighborList] getNeighborList() const

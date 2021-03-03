@@ -1150,6 +1150,27 @@ cdef class Voronoi(_Compute):
         return self
 
     @_Compute._computed_property
+    def neighbors(self):
+        """list[:class:`numpy.ndarray`]: A list of :class:`numpy.ndarray`
+        defining Voronoi polytope vertices for each cell."""
+        polytopes = []
+        cdef vector[vector[int]] raw_neigh = \
+            self.thisptr.getNeighbors()
+        cdef size_t i
+        cdef size_t j
+        cdef size_t num_neigh
+        cdef vector[int] raw_indices
+        #cdef int[:] polytope_indices
+        for i in range(raw_neigh.size()):
+            raw_indices = raw_neigh[i]
+            num_indices = raw_indices.size()
+            polytope_indices = np.empty(num_indices, dtype=int)
+            for j in range(num_indices):
+                polytope_indices[j] = raw_indices[j]
+            polytopes.append(np.asarray(polytope_indices))
+        return polytopes
+
+    @_Compute._computed_property
     def polytopes(self):
         """list[:class:`numpy.ndarray`]: A list of :class:`numpy.ndarray`
         defining Voronoi polytope vertices for each cell."""
@@ -1171,6 +1192,37 @@ cdef class Voronoi(_Compute):
                 polytope_vertices[j, 2] = raw_vertices[j].z
             polytopes.append(np.asarray(polytope_vertices))
         return polytopes
+
+    @_Compute._computed_property
+    def faces(self):
+        """list[:class:`numpy.ndarray`]: A list of :class:`numpy.ndarray`
+        defining Voronoi polytope vertices for each cell."""
+        faces = []
+        cdef vector[vector[vector[vec3[double]]]] raw_polytopes = \
+            self.thisptr.getFaces()
+        cdef size_t i
+        cdef size_t j
+        cdef size_t k
+        cdef size_t num_faces
+        cdef size_t num_verts
+        cdef vector[vector[vec3[double]]] raw_faces
+        cdef vector[vec3[double]] raw_verts
+        cdef double[:, ::1] face_vertices
+        for i in range(raw_polytopes.size()):
+            raw_faces = raw_polytopes[i]
+            num_faces = raw_faces.size()
+            poly_faces = []
+            for j in range(num_faces):
+                raw_verts = raw_faces[j]
+                num_verts = raw_verts.size()
+                face_vertices = np.empty((num_verts, 3), dtype=np.float64)
+                for k in range(num_verts):
+                   face_vertices[k, 0] = raw_verts[k].x
+                   face_vertices[k, 1] = raw_verts[k].y
+                   face_vertices[k, 2] = raw_verts[k].z
+                poly_faces.append(np.asarray(face_vertices))
+            faces.append(poly_faces)
+        return faces
 
     @_Compute._computed_property
     def volumes(self):

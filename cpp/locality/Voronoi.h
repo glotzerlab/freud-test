@@ -26,9 +26,19 @@ public:
         return m_neighbor_list;
     }
 
+    std::vector<std::vector<int>> getNeighbors() const
+    {
+        return m_neighbors;
+    }
+
     const std::vector<std::vector<vec3<double>>> getPolytopes() const
     {
         return m_polytopes;
+    }
+
+    const std::vector<std::vector<std::vector<vec3<double>>>> getFaces() const
+    {
+        return m_faces;
     }
 
     const util::ManagedArray<double>& getVolumes() const
@@ -39,7 +49,9 @@ public:
 private:
     box::Box m_box;
     std::shared_ptr<NeighborList> m_neighbor_list;      //!< Stored neighbor list
+    std::vector<std::vector<int>> m_neighbors;      //!< Stored neighbor list
     std::vector<std::vector<vec3<double>>> m_polytopes; //!< Voronoi polytopes
+    std::vector<std::vector<std::vector<vec3<double>>>> m_faces; //!< Voronoi faces 
     util::ManagedArray<double> m_volumes;               //!< Voronoi cell volumes
 };
 }; }; // end namespace freud::locality
