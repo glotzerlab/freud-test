@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <tbb/enumerable_thread_specific.h>
 #include <tbb/parallel_sort.h>
+#include <utility>
 
 #include "Box.h"
 #include "NeighborBond.h"
@@ -22,6 +23,24 @@
 
 namespace freud { namespace locality {
 
+//! Enumeration for types of queries.
+enum QueryType
+{
+    none,    //! Default query type to avoid implicit default types.
+    ball,    //! Query based on distance cutoff.
+    nearest, //! Query based on number of requested neighbors.
+};
+
+constexpr auto DEFAULT_MODE = QueryType::none;            //!< Default mode.
+constexpr unsigned int DEFAULT_NUM_NEIGHBORS(0xffffffff); //!< Default number of neighbors.
+constexpr float DEFAULT_R_MAX(-1.0);                      //!< Default maximum query distance.
+constexpr float DEFAULT_R_MIN(0);                         //!< Default minimum query distance.
+constexpr float DEFAULT_R_GUESS(-1.0);                    //!< Default guess query distance.
+constexpr float DEFAULT_SCALE(-1.0);      //!< Default scaling parameter for AABB nearest neighbor queries.
+constexpr bool DEFAULT_EXCLUDE_II(false); //!< Default for whether or not to include self-neighbors.
+constexpr auto ITERATOR_TERMINATOR
+    = NeighborBond(-1, -1, 0); //!< The object returned when iteration is complete.
+
 //! POD class to hold information about generic queries.
 /*! This class provides a standard method for specifying the type of query to
  *  perform with a NeighborQuery object. Rather than calling queryBall
@@ -30,39 +49,17 @@ namespace freud { namespace locality {
  */
 struct QueryArgs
 {
-    //! Default constructor.
-    /*! We set default values for all parameters here.
-     */
-    QueryArgs()
-        : mode(DEFAULT_MODE), num_neighbors(DEFAULT_NUM_NEIGHBORS), r_max(DEFAULT_R_MAX),
-          r_min(DEFAULT_R_MIN), r_guess(DEFAULT_R_GUESS), scale(DEFAULT_SCALE), exclude_ii(DEFAULT_EXCLUDE_II)
-    {}
+    QueryArgs() = default;
 
-    //! Enumeration for types of queries.
-    enum QueryType
-    {
-        none,    //! Default query type to avoid implicit default types.
-        ball,    //! Query based on distance cutoff.
-        nearest, //! Query based on number of requested neighbors.
-    };
-
-    QueryType mode;             //! Whether to perform a ball or k-nearest neighbor query.
-    unsigned int num_neighbors; //! The number of nearest neighbors to find.
-    float r_max;                //! The cutoff distance within which to find neighbors.
-    float r_min;                //! The minimum distance beyond which to find neighbors.
-    float r_guess; //! The initial distance for finding neighbors, used by some algorithms to initialize a
-                   //! number of neighbors query.
-    float scale; //! The scale factor to use when performing repeated ball queries to find a specified number
-                 //! of nearest neighbors.
-    bool exclude_ii; //! If true, exclude self-neighbors.
-
-    static const QueryType DEFAULT_MODE;             //!< Default mode.
-    static const unsigned int DEFAULT_NUM_NEIGHBORS; //!< Default number of neighbors.
-    static const float DEFAULT_R_MAX;                //!< Default maximum query distance.
-    static const float DEFAULT_R_MIN;                //!< Default minimum query distance.
-    static const float DEFAULT_R_GUESS;              //!< Default guess query distance.
-    static const float DEFAULT_SCALE;     //!< Default scaling parameter for AABB nearest neighbor queries.
-    static const bool DEFAULT_EXCLUDE_II; //!< Default for whether or not to include self-neighbors.
+    QueryType mode {DEFAULT_MODE}; //! Whether to perform a ball or k-nearest neighbor query.
+    unsigned int num_neighbors {DEFAULT_NUM_NEIGHBORS}; //! The number of nearest neighbors to find.
+    float r_max {DEFAULT_R_MAX};          //! The cutoff distance within which to find neighbors.
+    float r_min {DEFAULT_R_MIN};          //! The minimum distance beyond which to find neighbors.
+    float r_guess {DEFAULT_R_GUESS};      //! The initial distance for finding neighbors, used by some
+                                          //! algorithms to initialize a number of neighbors query.
+    float scale {DEFAULT_SCALE};          //! The scale factor to use when performing repeated ball queries
+                                          //! to find a specified number of nearest neighbors.
+    bool exclude_ii {DEFAULT_EXCLUDE_II}; //! If true, exclude self-neighbors.
 };
 
 // Forward declare the iterators
@@ -80,11 +77,11 @@ class NeighborQuery
 {
 public:
     //! Nullary constructor for Cython
-    NeighborQuery() {}
+    NeighborQuery() = default;
 
     //! Constructor
-    NeighborQuery(const box::Box& box, const vec3<float>* points, unsigned int n_points)
-        : m_box(box), m_points(points), m_n_points(n_points)
+    NeighborQuery(box::Box box, const vec3<float>* points, unsigned int n_points)
+        : m_box(std::move(box)), m_points(points), m_n_points(n_points)
     {
         // Reject systems with 0 particles
         if (m_n_points == 0)
@@ -106,7 +103,7 @@ public:
     }
 
     //! Empty Destructor
-    virtual ~NeighborQuery() {}
+    virtual ~NeighborQuery() = default;
 
     //! Perform a query based on a set of query parameters.
     /*! Given a QueryArgs object and a set of points to perform a query
@@ -125,8 +122,10 @@ public:
     {
         // pair calculations using non-periodic boxes should fail
         vec3<bool> periodic = m_box.getPeriodic();
-        if (! (periodic.x && periodic.y && periodic.z))
-            std::domain_error("Cannot execute pair queries in a non-periodic box");
+        if (!(periodic.x && periodic.y && periodic.z))
+        {
+            throw std::domain_error("Pair queries in a non-periodic box are not implemented.");
+        }
 
         this->validateQueryArgs(query_args);
         return std::make_shared<NeighborQueryIterator>(this, query_points, n_query_points, query_args);
@@ -166,7 +165,7 @@ public:
     //! Get a point's coordinates using index operator notation
     /*! \param index The point index to return.
      */
-    const vec3<float> operator[](unsigned int index) const
+    vec3<float> operator[](unsigned int index) const
     {
         if (index >= m_n_points)
         {
@@ -187,21 +186,27 @@ protected:
     {
         inferMode(args);
         // Validate remaining arguments.
-        if (args.mode == QueryArgs::ball)
+        if (args.mode == QueryType::ball)
         {
-            if (args.r_max == QueryArgs::DEFAULT_R_MAX)
+            if (args.r_max == DEFAULT_R_MAX)
+            {
                 throw std::runtime_error(
                     "You must set r_max in the query arguments when performing ball queries.");
-            if (args.num_neighbors != QueryArgs::DEFAULT_NUM_NEIGHBORS)
+            }
+            if (args.num_neighbors != DEFAULT_NUM_NEIGHBORS)
+            {
                 throw std::runtime_error(
                     "You cannot set num_neighbors in the query arguments when performing ball queries.");
+            }
         }
-        else if (args.mode == QueryArgs::nearest)
+        else if (args.mode == QueryType::nearest)
         {
-            if (args.num_neighbors == QueryArgs::DEFAULT_NUM_NEIGHBORS)
+            if (args.num_neighbors == DEFAULT_NUM_NEIGHBORS)
+            {
                 throw std::runtime_error("You must set num_neighbors in the query arguments when performing "
                                          "number of neighbor queries.");
-            if (args.r_max == QueryArgs::DEFAULT_R_MAX)
+            }
+            if (args.r_max == DEFAULT_R_MAX)
             {
                 args.r_max = std::numeric_limits<float>::infinity();
             }
@@ -221,15 +226,15 @@ protected:
     virtual void inferMode(QueryArgs& args) const
     {
         // Infer mode if possible.
-        if (args.mode == QueryArgs::none)
+        if (args.mode == QueryType::none)
         {
-            if (args.num_neighbors != QueryArgs::DEFAULT_NUM_NEIGHBORS)
+            if (args.num_neighbors != DEFAULT_NUM_NEIGHBORS)
             {
-                args.mode = QueryArgs::nearest;
+                args.mode = QueryType::nearest;
             }
-            else if (args.r_max != QueryArgs::DEFAULT_R_MAX)
+            else if (args.r_max != DEFAULT_R_MAX)
             {
-                args.mode = QueryArgs::ball;
+                args.mode = QueryType::ball;
             }
         }
     }
@@ -252,10 +257,10 @@ class NeighborQueryPerPointIterator : public NeighborPerPointIterator
 {
 public:
     //! Nullary constructor for Cython
-    NeighborQueryPerPointIterator() {}
+    NeighborQueryPerPointIterator() = default;
 
     //! Constructor
-    NeighborQueryPerPointIterator(const NeighborQuery* neighbor_query, const vec3<float> query_point,
+    NeighborQueryPerPointIterator(const NeighborQuery* neighbor_query, const vec3<float>& query_point,
                                   unsigned int query_point_idx, float r_max, float r_min, bool exclude_ii)
         : NeighborPerPointIterator(query_point_idx), m_neighbor_query(neighbor_query),
           m_query_point(query_point), m_finished(false), m_r_max(r_max), m_r_min(r_min),
@@ -263,22 +268,20 @@ public:
     {}
 
     //! Empty Destructor
-    virtual ~NeighborQueryPerPointIterator() {}
+    ~NeighborQueryPerPointIterator() override = default;
 
     //! Indicate when done.
-    virtual bool end()
+    bool end() const override
     {
         return m_finished;
     }
 
     //! Get the next element.
-    virtual NeighborBond next() = 0;
-
-    static const NeighborBond ITERATOR_TERMINATOR; //!< The object returned when iteration is complete.
+    NeighborBond next() override = 0;
 
 protected:
-    const NeighborQuery* m_neighbor_query; //!< Link to the NeighborQuery object.
-    const vec3<float> m_query_point;       //!< Coordinates of the query point.
+    const NeighborQuery* m_neighbor_query;       //!< Link to the NeighborQuery object.
+    const vec3<float> m_query_point = {0, 0, 0}; //!< Coordinates of the query point.
     bool m_finished; //!< Flag to indicate that iteration is complete (must be set by next() on termination).
     float m_r_max;   //!< Cutoff distance for neighbors.
     float m_r_min;   //!< Minimum distance for neighbors.
@@ -300,12 +303,9 @@ protected:
 class NeighborQueryIterator
 {
 public:
-    //! Nullary constructor for Cython
-    NeighborQueryIterator() {}
-
     //! Constructor
     NeighborQueryIterator(const NeighborQuery* neighbor_query, const vec3<float>* query_points,
-                          unsigned int num_query_points, QueryArgs qargs)
+                          unsigned int num_query_points, QueryArgs& qargs)
         : m_neighbor_query(neighbor_query), m_query_points(query_points),
           m_num_query_points(num_query_points), m_qargs(qargs), m_finished(false), m_cur_p(0)
     {
@@ -313,10 +313,10 @@ public:
     }
 
     //! Empty Destructor
-    ~NeighborQueryIterator() {}
+    ~NeighborQueryIterator() = default;
 
     //! Indicate when done.
-    bool end()
+    bool end() const
     {
         return m_finished;
     }
@@ -331,7 +331,9 @@ public:
     NeighborBond next()
     {
         if (m_finished)
+        {
             return ITERATOR_TERMINATOR;
+        }
         NeighborBond nb;
         while (true)
         {
@@ -346,7 +348,9 @@ public:
             }
             m_cur_p++;
             if (m_cur_p >= m_num_query_points)
+            {
                 break;
+            }
             m_iter = this->query(m_cur_p);
         }
         m_finished = true;
@@ -368,7 +372,7 @@ public:
      */
     NeighborList* toNeighborList(bool sort_by_distance = false)
     {
-        typedef tbb::enumerable_thread_specific<std::vector<NeighborBond>> BondVector;
+        using BondVector = tbb::enumerable_thread_specific<std::vector<NeighborBond>>;
         BondVector bonds;
         util::forLoopWrapper(0, m_num_query_points, [&](size_t begin, size_t end) {
             BondVector::reference local_bonds(bonds.local());
@@ -391,13 +395,17 @@ public:
         tbb::flattened2d<BondVector> flat_bonds = tbb::flatten2d(bonds);
         std::vector<NeighborBond> linear_bonds(flat_bonds.begin(), flat_bonds.end());
         if (sort_by_distance)
+        {
             tbb::parallel_sort(linear_bonds.begin(), linear_bonds.end(), compareNeighborDistance);
+        }
         else
+        {
             tbb::parallel_sort(linear_bonds.begin(), linear_bonds.end(), compareNeighborBond);
+        }
 
         unsigned int num_bonds = linear_bonds.size();
 
-        NeighborList* nl = new NeighborList();
+        auto* nl = new NeighborList();
         nl->setNumBonds(num_bonds, m_num_query_points, m_neighbor_query->getNPoints());
 
         util::forLoopWrapper(0, num_bonds, [&](size_t begin, size_t end) {
@@ -412,8 +420,6 @@ public:
 
         return nl;
     }
-
-    static const NeighborBond ITERATOR_TERMINATOR; //!< The object returned when iteration is complete.
 
 protected:
     const NeighborQuery* m_neighbor_query;                 //!< Link to the NeighborQuery object.

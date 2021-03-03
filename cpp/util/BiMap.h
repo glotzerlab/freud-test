@@ -5,6 +5,7 @@
 #include <cstddef> // Needed for offsetof
 #include <map>
 #include <set>
+#include <stdexcept>
 #include <vector>
 
 /* BiMap container modelled after Boost::BiMap with templatization.
@@ -77,8 +78,8 @@ private:
     };
 
 public:
-    typedef std::pair<T, U> Pair;
-    typedef std::vector<Pair*> Container_t;
+    using Pair = std::pair<T, U>;
+    using Container_t = std::vector<Pair*>;
     template<typename I> using Pointer_Set_t = std::set<const I*, Comp<I>>;
     using iterator = typename Container_t::iterator;
     using const_iterator = typename Container_t::const_iterator;
@@ -122,7 +123,7 @@ public:
         return *this;
     }
 
-    BiMap& operator=(BiMap&& rhs)
+    BiMap& operator=(BiMap&& rhs) noexcept
     {
         std::swap(container, rhs.container);
         std::swap(set_A, rhs.set_A);
@@ -149,13 +150,10 @@ public:
             delete pair;
             return false;
         }
-        else
-        {
-            set_A.emplace(&(pair->first));
-            set_B.emplace(&(pair->second));
-            container.emplace_back(std::move(pair));
-            return true;
-        }
+        set_A.emplace(&(pair->first));
+        set_B.emplace(&(pair->second));
+        container.emplace_back(std::move(pair));
+        return true;
     }
 
     void insert(const Pair& Pair_in)

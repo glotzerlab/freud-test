@@ -17,9 +17,9 @@ cdef extern from "PMFTR12.h" namespace "freud::pmft":
         PMFTR12(float, unsigned int, unsigned int, unsigned int) except +
 
         void accumulate(const freud._locality.NeighborQuery*,
-                        float*,
-                        vec3[float]*,
-                        float*,
+                        const float*,
+                        const vec3[float]*,
+                        const float*,
                         unsigned int,
                         const freud._locality.NeighborList*,
                         freud._locality.QueryArgs) except +
@@ -30,9 +30,9 @@ cdef extern from "PMFTXYT.h" namespace "freud::pmft":
                 unsigned int, unsigned int, unsigned int) except +
 
         void accumulate(const freud._locality.NeighborQuery*,
-                        float*,
-                        vec3[float]*,
-                        float*,
+                        const float*,
+                        const vec3[float]*,
+                        const float*,
                         unsigned int,
                         const freud._locality.NeighborList*,
                         freud._locality.QueryArgs) except +
@@ -42,8 +42,8 @@ cdef extern from "PMFTXY.h" namespace "freud::pmft":
         PMFTXY(float, float, unsigned int, unsigned int) except +
 
         void accumulate(const freud._locality.NeighborQuery*,
-                        float*,
-                        vec3[float]*,
+                        const float*,
+                        const vec3[float]*,
                         unsigned int,
                         const freud._locality.NeighborList*,
                         freud._locality.QueryArgs) except +
@@ -54,10 +54,10 @@ cdef extern from "PMFTXYZ.h" namespace "freud::pmft":
                 unsigned int, vec3[float]) except +
 
         void accumulate(const freud._locality.NeighborQuery*,
-                        quat[float]*,
-                        vec3[float]*,
+                        const quat[float]*,
+                        const vec3[float]*,
                         unsigned int,
-                        quat[float]*,
+                        const quat[float]*,
                         unsigned int,
                         const freud._locality.NeighborList*,
                         freud._locality.QueryArgs) except +

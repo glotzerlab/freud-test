@@ -26,6 +26,10 @@ Enforcing the requirement of right-handedness guarantees that the box can be rep
 
 where each column is one of the box vectors.
 
+.. note::
+    All **freud** boxes are centered at the origin, so for a given box the
+    range of possible positions is :math:`[-L/2, L/2)`.
+
 As such, the box is characterized by six parameters: the box vector lengths :math:`L_x`, :math:`L_y`, and :math:`L_z`, and the tilt factors :math:`xy`, :math:`xz`, and :math:`yz`.
 The tilt factors are directly related to the angles between the box vectors.
 All computations in **freud** are built around this class, ensuring that they naturally handle data from simulations conducted in non-cubic systems.
@@ -62,7 +66,3 @@ For more complex use-cases, the :py:meth:`freud.box.Box.from_box` method provide
     freud.box.Box(Lx=8, Ly=7, Lz=10, xy=0.5, xz=0.7, yz=0.2, dimensions=3)
 
 More examples on how boxes can be created may be found in the API documentation of the :class:`Box <freud.box.Box>` class.
-
-.. note::
-    All **freud** boxes are centered at the origin, so for a given box the
-    range of possible positions is :math:`[-L/2, L/2)`.

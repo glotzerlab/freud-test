@@ -26,10 +26,10 @@ template<typename T> class HexaticTranslational
 {
 public:
     //! Constructor
-    HexaticTranslational(T k, bool weighted = false) : m_k(k), m_weighted(weighted) {}
+    explicit HexaticTranslational(T k, bool weighted = false) : m_k(k), m_weighted(weighted) {}
 
     //! Destructor
-    virtual ~HexaticTranslational() {}
+    virtual ~HexaticTranslational() = default;
 
     T getK() const
     {
@@ -51,10 +51,12 @@ protected:
     //! Compute the order parameter
     template<typename Func>
     void computeGeneral(Func func, const freud::locality::NeighborList* nlist,
-                        const freud::locality::NeighborQuery* points, freud::locality::QueryArgs qargs);
+                        const freud::locality::NeighborQuery* points, freud::locality::QueryArgs qargs,
+                        bool normalize_by_k);
 
-    const T m_k;     //!< The symmetry order for Hexatic, or normalization for Translational
-    const bool m_weighted; //!< Whether to use neighbor weights in computing the order parameter (default false)
+    const T m_k; //!< The symmetry order for Hexatic, or normalization for Translational
+    const bool
+        m_weighted; //!< Whether to use neighbor weights in computing the order parameter (default false)
     util::ManagedArray<std::complex<float>> m_psi_array; //!< psi array computed
 };
 
@@ -68,7 +70,7 @@ public:
     Hexatic(unsigned int k = 6, bool weighted = false);
 
     //! Destructor
-    ~Hexatic();
+    ~Hexatic() override = default;
 
     //! Compute the hexatic order parameter
     void compute(const freud::locality::NeighborList* nlist, const freud::locality::NeighborQuery* points,
@@ -76,7 +78,7 @@ public:
 };
 
 //! Compute the translational order parameter for a set of points
-/*!
+/*! THIS CLASS IS DEPRECATED AND WILL BE REMOVED IN THE NEXT MAJOR RELEASE OF FREUD.
  */
 class Translational : public HexaticTranslational<float>
 {
@@ -85,7 +87,7 @@ public:
     Translational(float k = 6, bool weighted = false);
 
     //! Destructor
-    ~Translational();
+    ~Translational() override = default;
 
     //! Compute the translational order parameter
     void compute(const freud::locality::NeighborList* nlist, const freud::locality::NeighborQuery* points,

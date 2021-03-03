@@ -6,6 +6,7 @@
 #define VECTOR_MATH_H
 
 #include <cmath>
+#include <utility>
 
 /*! \file VectorMath.h
     \brief Vector and quaternion math operations
@@ -40,26 +41,19 @@ template<class Real> struct vec3
     vec3(const vec3<float>& a) : x(a.x), y(a.y), z(a.z) {}
 
     //! Default construct a 0 vector
-    vec3() : x(0), y(0), z(0) {}
+    vec3() = default;
 
     //! Swap with another vector
     void swap(vec3<Real>& v)
     {
-        Real tx, ty, tz;
-        tx = v.x;
-        ty = v.y;
-        tz = v.z;
-        v.x = x;
-        v.y = y;
-        v.z = z;
-        x = tx;
-        y = ty;
-        z = tz;
+        std::swap(x, v.x);
+        std::swap(y, v.y);
+        std::swap(z, v.z);
     }
 
-    Real x; //!< x-component of the vector
-    Real y; //!< y-component of the vector
-    Real z; //!< z-component of the vector
+    Real x {0}; //!< x-component of the vector
+    Real y {0}; //!< y-component of the vector
+    Real z {0}; //!< z-component of the vector
 };
 
 //! Addition of two vec3s
@@ -323,7 +317,8 @@ template<class Real> struct vec2
     //! Swap with another vector
     void swap(vec2<Real>& v)
     {
-        Real tx, ty;
+        Real tx;
+        Real ty;
         tx = v.x;
         ty = v.y;
         v.x = x;
@@ -615,7 +610,7 @@ template<class Real> struct quat
     quat() : s(1), v(vec3<Real>(0, 0, 0)) {}
 
     //! Construct a quaternion from a rotation matrix
-    quat(const rotmat3<Real>& r);
+    explicit quat(const rotmat3<Real>& r);
 
     //! Construct a quat from an axis and an angle.
     /*! \param axis angle to represent
@@ -894,7 +889,10 @@ template<class Real> struct rotmat2
     */
     explicit rotmat2(const quat<Real>& q)
     {
-        Real a = q.s, b = q.v.x, c = q.v.y, d = q.v.z;
+        Real a = q.s;
+        Real b = q.v.x;
+        Real c = q.v.y;
+        Real d = q.v.z;
 
         row0.x = a * a + b * b - c * c - d * d;
         row0.y = 2 * b * c - 2 * a * d;
@@ -914,13 +912,13 @@ template<class Real> struct rotmat2
     */
     static rotmat2 fromAngle(const Real& theta)
     {
-        vec2<Real> row0;
-        vec2<Real> row1;
-        row0.x = std::cos(theta);
-        row0.y = -std::sin(theta);
-        row1.x = std::sin(theta);
-        row1.y = std::cos(theta);
-        return rotmat2<Real>(row0, row1);
+        vec2<Real> r0;
+        vec2<Real> r1;
+        r0.x = std::cos(theta);
+        r0.y = -std::sin(theta);
+        r1.x = std::sin(theta);
+        r1.y = std::cos(theta);
+        return rotmat2<Real>(r0, r1);
     }
 
     vec2<Real> row0; //!< First row
@@ -986,7 +984,10 @@ template<class Real> struct rotmat3
     explicit rotmat3(const quat<Real>& q)
     {
         // formula from http://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation
-        Real a = q.s, b = q.v.x, c = q.v.y, d = q.v.z;
+        Real a = q.s;
+        Real b = q.v.x;
+        Real c = q.v.y;
+        Real d = q.v.z;
 
         row0.x = a * a + b * b - c * c - d * d;
         row0.y = 2 * b * c - 2 * a * d;

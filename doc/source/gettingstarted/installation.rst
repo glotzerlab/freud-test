@@ -32,19 +32,36 @@ Compile from source
 
 The following are **required** for installing **freud**:
 
-- `Python <https://www.python.org/>`_ (3.5+ required)
-- `NumPy <https://www.numpy.org/>`_
-- `Intel Threading Building Blocks <https://www.threadingbuildingblocks.org/>`_ (TBB)
-- `Cython <https://cython.org/>`_ (0.29+ required)
+- A C++14-compliant compiler
+- `Python <https://www.python.org/>`__ (>=3.6)
+- `NumPy <https://www.numpy.org/>`__ (>=1.14)
+- `Intel Threading Building Blocks <https://www.threadingbuildingblocks.org/>`__
+- `Cython <https://cython.org/>`__ (>=0.29.14)
+- `scikit-build <https://scikit-build.readthedocs.io/>`__ (>=0.10.0)
+- `CMake <https://cmake.org/>`__ (>=3.6.3)
 
-The following are **optional** for installing **freud**:
+.. note::
 
+    Depending on the generator you are using, you may require a newer version of CMake.
+    In particular, on Windows Visual Studio 2017 requires at least CMake 3.7.1, while Visual Studio 2019 requires CMake 3.14.
+    For more information on specific generators, see the `CMake generator documentation <https://cmake.org/cmake/help/git-stage/manual/cmake-generators.7.html>`__.
 
-For conda users, these requirements can be met by installing the following packages from the `conda-forge channel <https://conda-forge.org/>`_:
+The **freud** library uses scikit-build and CMake to handle the build process itself, while the other requirements are required for compiling code in **freud**.
+These requirements can be met by installing the following packages from the `conda-forge channel <https://conda-forge.org/>`__:
 
 .. code-block:: bash
 
-    conda install -c conda-forge tbb tbb-devel numpy cython
+    conda install -c conda-forge tbb tbb-devel numpy cython scikit-build cmake
+
+All requirements other than TBB can also be installed via the `Python Package Index <https://pypi.org/>`__
+
+.. code-block:: bash
+
+    pip install numpy cython scikit-build cmake
+
+Wheels for tbb and tbb-devel exist on PyPI, but only for certain operating systems, so your mileage may vary.
+For non-conda users, we recommend using OS-specific package managers (e.g. `Homebrew <https://brew.sh/>`__ for Mac) to install TBB.
+As in the snippets above, it may be necessary to install both both a TBB and a "devel" package in order to get both the headers and the shared libraries.
 
 The code that follows builds **freud** and installs it for all users (append ``--user`` if you wish to install it to your user site directory):
 
@@ -62,57 +79,48 @@ You can also build **freud** in place so that you can run from within the folder
     python setup.py build_ext --inplace
 
 Building **freud** in place has certain advantages, since it does not affect your Python behavior except within the **freud** directory itself (where **freud** can be imported after building).
-Additionally, due to limitations inherent to the distutils/setuptools infrastructure, building extension modules can only be parallelized using the build_ext subcommand of setup.py, not with install.
-As a result, it will be faster to manually run build_ext and then install (which normally calls build_ext under the hood anyway) the built packages.
-In general, the following options are available for setup.py in addition to the standard setuptools options (notes are included to indicate which options are only available for specific subcommands such as build_ext):
 
-.. glossary::
+CMake Options
++++++++++++++
 
-    -\\-PRINT-WARNINGS
-      Specify whether or not to print compilation warnings resulting from the build even if the build succeeds with no errors.
-
-    -j
-      Compile in parallel.
-      This affects both the generation of C++ files from Cython files and the subsequent compilation of the source files.
-      In the latter case, this option controls the number of Python modules that will be compiled in parallel.
-
-    -\\-TBB-ROOT
-      The root directory where TBB is installed.
-      Useful if TBB is installed in a non-standard location or cannot be located by Python for some other reason.
-      Note that this information can also be provided using the environment variable ``TBB_ROOT``.
-      The options ``--TBB-INCLUDE`` and ``--TBB-LINK`` will take precedence over ``--TBB-ROOT`` if both are specified.
-
-    -\\-TBB-INCLUDE
-      The directory where the TBB headers (e.g. ``tbb.h``) are located.
-      Useful if TBB is installed in a non-standard location or cannot be located by Python for some other reason.
-      Note that this information can also be provided using the environment variable ``TBB_ROOT``.
-      The options ``--TBB-INCLUDE`` and ``--TBB-LINK`` will take precedence over ``--TBB-ROOT`` if both are specified.
-
-    -\\-TBB-LINK
-      The directory where the TBB shared library (e.g. ``libtbb.so`` or ``libtbb.dylib``) is located.
-      Useful if TBB is installed in a non-standard location or cannot be located by Python for some other reason.
-      Note that this information can also be provided using the environment variable ``TBB_ROOT``.
-      The options ``--TBB-INCLUDE`` and ``--TBB-LINK`` will take precedence over ``--TBB-ROOT`` if both are specified.
-
-The following additional arguments are primarily useful for developers:
-
-.. glossary::
-
-    -\\-COVERAGE
-      Build the Cython files with coverage support to check unit test coverage.
-
-    -\\-NTHREAD
-      Specify the number of threads to allocate to compiling each module.
-      This option is primarily useful for rapid development, particularly when all changes are in one module.
-      While the ``-j`` option will not help parallelize this case, this option allows compilation of multiple source files belonging to the same module in parallel.
+The scikit-build tool allows setup.py to accept three different sets of options separated by ``--``, where each set is provided directly to scikit-build, to CMake, or to the code generator of choice, respectively.
+For example, the command ``python setup.py build_ext --inplace -- -DCOVERAGE=ON -G Ninja -- -j 4`` tell scikit-build to perform an in-place build, it tells CMake to turn on the ``COVERAGE`` option and use Ninja for compilation, and it tells Ninja to compile with 4 parallel threads.
+For more information on these options, see the `scikit-build docs <scikit-build.readthedocs.io/>`__.
 
 .. note::
 
-    **freud** makes use of git submodules. If you ever wish to manually update these, you can execute:
+    The default CMake build configuration for freud is ``ReleaseWithDocs`` (not a standard build configuration like ``Release`` or ``RelWithDebInfo``).
+    On installation, ``setup.py`` assumes ``--build-type=ReleaseWithDocs`` by default if no build type is specified.
+    Using this build configuration is a workaround for `this issue <https://github.com/scikit-build/scikit-build/issues/518>`__ with scikit-build and Cython embedding docstrings.
+
+In addition to standard CMake flags, the following CMake options are available for **freud**:
+
+.. glossary::
+
+    \--COVERAGE
+      Build the Cython files with coverage support to check unit test coverage.
+
+
+The **freud** CMake configuration also respects the following environment variables (in addition to standards like ``LD_LIBRARY_PATH``).
+
+.. glossary::
+
+    TBBROOT
+      The root directory where TBB is installed.
+      Useful if TBB is installed in a non-standard location or cannot be located for some other reason.
+      This variable is set by the ``tbbvars.sh`` script included with TBB when building from source.
+
+    TBB_INCLUDE_DIR
+      The directory where the TBB headers (e.g. ``tbb.h``) are located.
+      Useful if TBB is installed in a non-standard location or cannot be located for some other reason.
+
+.. note::
+
+    **freud** makes use of git submodules. To manually update git submodules, execute:
 
     .. code-block:: bash
 
-        git submodule update --init
+        git submodule update --init --recursive
 
 Unit Tests
 ==========

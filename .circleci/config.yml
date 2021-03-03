@@ -6,33 +6,16 @@ orbs:
 references:
   container_manylinux: &container_manylinux
     docker:
-      - image: quay.io/pypa/manylinux1_x86_64
+      - image: quay.io/pypa/manylinux2010_x86_64
     working_directory: ~/ci/freud
 
   container_macos: &container_macos
     macos:
-      xcode: "9.0"
+      xcode: "12.0.0"
     working_directory: ~/ci/freud
 
   load_code: &load_code
     checkout
-
-  load_code_centos: &load_code_centos
-    # For use with old OS that doesn't support clone over ssh
-    run:
-      name: Checkout repository without ssh
-      command: |
-        cd ~/ci/freud
-        git clone ${CIRCLE_REPOSITORY_URL} .
-        if [ -n "$CIRCLE_TAG" ]
-        then
-          git reset --hard "$CIRCLE_SHA1"
-          git checkout -q "$CIRCLE_TAG"
-        elif [ -n "$CIRCLE_BRANCH" ]
-        then
-          git reset --hard "$CIRCLE_SHA1"
-          git checkout -q -B "$CIRCLE_BRANCH"
-        fi
 
   update_submodules: &update_submodules
     run:
@@ -44,7 +27,39 @@ references:
     run:
       name: Install dependencies
       command: |
-        python${PYVER} -m pip install --user -r requirements-testing.txt
+        # Create a virtual environment to ignore the CI image's pre-installed packages
+        ${PYTHON} -m pip install --progress-bar off --upgrade virtualenv --user
+        mkdir -p ./venv
+        ${PYTHON} -m virtualenv ./venv --clear
+        . venv/bin/activate
+        ${PYTHON} -m pip install --progress-bar off --upgrade pip
+        if [ "${DEPENDENCIES}" == "OLDEST" ]; then
+          # Since we're testing against a very old cmake, wheels may not exist
+          # for Python versions >=3.8. We will need to build the cmake wheels
+          # from a tarball in this case, and cmake depends on scikit-build, so we
+          # install skbuild separately here. Note that newer cmake versions build
+          # universal wheels instead, so once we upgrade to cmake >=3.14 we
+          # won't be dependent on them updating wheels for specific new Python
+          # versions.
+          #
+          # Some requirements below are not strictly the lowest versions, and
+          # are only needed for testing.
+          ${PYTHON} -m pip install --progress-bar off \
+            scikit-build==0.10.0 \
+            cmake==3.6.3.post1 \
+            cython==0.29.14 \
+            numpy==1.14.0 \
+            rowan==1.2.1 \
+            scipy==1.1.0 \
+            matplotlib==3.0.0 \
+            gsd==2.0.0 \
+            garnett==0.7.1 \
+            sympy==1.0
+        else
+          ${PYTHON} -m pip install --progress-bar off -U -r requirements-testing.txt
+        fi
+        # Show the installed package versions
+        ${PYTHON} -m pip list
 
   get_conda_requirements: &get_conda_requirements
     run:
@@ -52,53 +67,77 @@ references:
       command: |
         conda config --set always_yes yes --set changeps1 no
         conda config --add channels conda-forge
-        conda update -q conda certifi
-        conda install python pip tbb tbb-devel
-        conda install --file requirements-testing.txt
+        conda update -q conda
+        conda install python=${PYVER} pip tbb tbb-devel
+        conda update --all
+        ${PYTHON} -m pip install --progress-bar off scikit-build==0.10.0
+        ${PYTHON} -m pip install --progress-bar off -U -r requirements-testing.txt
+        # Install cmake >=3.14 to support Visual Studio 2019 generator
+        ${PYTHON} -m pip install --progress-bar off -U cmake~=3.14
 
-  get_style_requirements: &get_style_requirements
+  get_pre_commit_requirements: &get_pre_commit_requirements
     run:
-      name: Install style check dependencies
+      name: Install pre-commit dependencies
       command: |
-        python${PYVER} -m pip install --user flake8==3.7.8
+        # We don't actually need to build, so we don't need any of the normal
+        # dependencies, but we need to initialize the build system far enough
+        # to generate a compile database. For convenience, just use the latest
+        # wheels for these; the actual build steps will test against our older
+        # supported versions.
+        ${PYTHON} -m pip install --user scikit-build cmake
+        ${PYTHON} -m pip install --user -r requirements-precommit.txt
 
-  #check_cpp_style: &check_cpp_style
-  #  run:
-  #    name: clang-format
-  #    command: |
-  #      for f in cpp/**/*; do
-  #        if ! diff $f <(clang-format-6.0 -style=file $f) > /dev/null; then
-  #          echo "$f does not match clang-format style."
-  #          diff --color $f <(clang-format-6.0 -style=file $f) || true
-  #        fi
-  #      done
-
-  check_python_style: &check_python_style
+  pre-test-checks: &pre-test-checks
     run:
-      name: flake8
+      name: Run all static checks
       command: |
-        python${PYVER} -m flake8 --show-source .
+        # Run the standard pre-commit checks first
+        ${PYTHON} -m pre_commit run --all-files --show-diff-on-failure
+        # Next, run the C++ pre-commit checks.  We need to generate the
+        # compile_commands.json database, which requires building.
+        ${PYTHON} setup.py build_ext --inplace -- -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -- -j 4
+        ${PYTHON} -m pre_commit run -c .pre-commit-config-cpp.yaml --all-files --show-diff-on-failure
 
   build: &build
     run:
       name: Build
       command: |
-        python${PYVER} --version
-        python${PYVER} setup.py build_ext --inplace --COVERAGE
+        if [ -d "venv" ]; then
+          . venv/bin/activate
+        fi
+        ${PYTHON} --version
+        # Max 4 threads to not overtax CI.
+        ${PYTHON} setup.py build_ext --inplace -- -DCOVERAGE=ON -- -j 4 -v
+
+  windows_env: &windows_env
+    PYTHON: "python"
+    TBBROOT: "C:\\tools\\miniconda3\\Library"
+
+  build_windows: &build_windows
+    run:
+      name: Build with MSVC
+      command: |
+        ${PYTHON} --version
+        ${PYTHON} setup.py build_ext --inplace -- -G "Visual Studio 16 2019" -DCOVERAGE=ON
 
   test: &test
     run:
       name: Run unit tests
       command: |
-          python${PYVER} -m unittest discover tests -v
+        if [ -d "venv" ]; then
+          . venv/bin/activate
+        fi
+        ${PYTHON} -m unittest discover tests -v
 
   test_cov: &test_cov
     run:
       name: Run unit tests with coverage
       command: |
-          export PATH=~/.local/bin:${PATH}
-          coverage run -m unittest discover tests -v
-          bash <(curl -s https://codecov.io/bash)
+        if [ -d "venv" ]; then
+          . venv/bin/activate
+        fi
+        ${PYTHON} -m coverage run -m unittest discover tests -v
+        bash <(curl -s https://codecov.io/bash)
 
   store: &store
     store_artifacts:
@@ -109,38 +148,46 @@ references:
     run:
       name: Run benchmarks
       command: |
-          python${PYVER} -m pip install --user -r requirements-testing.txt
-          echo 'export PYTHONPATH=$PYTHONPATH:.' >> $BASH_ENV
-          echo 'export BENCHMARK_NPROC=2' >> $BASH_ENV
-          source $BASH_ENV
-          BENCHSCR="benchmarks/benchmarker.py"
-          echo "Running benchmark on current HEAD"
-          python${PYVER} "$BENCHSCR" run
+        echo 'export PYTHONPATH=$PYTHONPATH:.' >> $BASH_ENV
+        echo 'export BENCHMARK_NPROC=2' >> $BASH_ENV
+        source $BASH_ENV
+        BENCHSCR="benchmarks/benchmarker.py"
+        echo "Running benchmark on current HEAD"
+        ${PYTHON} "$BENCHSCR" run
 
   comparison: &comparison
     run:
       name: Compare benchmark with origin/master
       command: |
-          echo "Comparing with origin/master"
-          git reset --hard origin/master
-          echo "PYVER=${PYVER}"
-          echo 'export PYTHONPATH=$PYTHONPATH:.' >> $BASH_ENV
-          echo 'export BENCHMARK_NPROC=2' >> $BASH_ENV
-          source $BASH_ENV
-          rm freud/*.cpp
-          python${PYVER} setup.py build_ext --inplace --COVERAGE --ENABLE-CYTHON
-          git checkout "${CIRCLE_SHA1}" -- benchmarks/
-          BENCHSCR="benchmarks/benchmarker.py"
-          echo "Running benchmark on origin/master"
-          python${PYVER} "$BENCHSCR" run
-          python${PYVER} "$BENCHSCR" compare origin/master "${CIRCLE_SHA1}"
+        echo "Comparing with origin/master"
+        git reset --hard origin/master
+        echo "PYVER=${PYVER}"
+        echo 'export PYTHONPATH=$PYTHONPATH:.' >> $BASH_ENV
+        echo 'export BENCHMARK_NPROC=2' >> $BASH_ENV
+        source $BASH_ENV
+        # Max 4 threads to not overtax CI.
+        ${PYTHON} setup.py build_ext --inplace -- -DCOVERAGE=ON -- -j 4
+        git checkout "${CIRCLE_SHA1}" -- benchmarks/
+        BENCHSCR="benchmarks/benchmarker.py"
+        echo "Running benchmark on origin/master"
+        ${PYTHON} "$BENCHSCR" run
+        ${PYTHON} "$BENCHSCR" compare origin/master "${CIRCLE_SHA1}"
 
   store_benchmarks: &store_benchmarks
     store_artifacts:
       path: benchmarks/reports
       destination: benchmarks-reports
 
+  load_check_style: &load_check_style
+    working_directory: ~/ci/freud
+    steps:
+      - *load_code
+      - *update_submodules
+      - *get_pre_commit_requirements
+      - *pre-test-checks
+
   build_and_test_linux: &build_and_test_linux
+    working_directory: ~/ci/freud
     steps:
       - *load_code
       - *update_submodules
@@ -150,6 +197,7 @@ references:
       - *store
 
   build_and_test_linux_with_cov: &build_and_test_linux_with_cov
+    <<: *build_and_test_linux
     steps:
       - *load_code
       - *update_submodules
@@ -159,21 +207,16 @@ references:
       - *store
 
   build_and_test_windows: &build_and_test_windows
+    executor:
+      name: win/default
+      shell: bash.exe
     steps:
       - *load_code
       - *update_submodules
       - *get_conda_requirements
-      - *build
+      - *build_windows
       - *test_cov
       - *store
-
-  load_check_style: &load_check_style
-    steps:
-      - *load_code
-      - *update_submodules
-      - *get_style_requirements
-      #- *check_cpp_style
-      - *check_python_style
 
   build_and_benchmark: &build_and_benchmark
     steps:
@@ -187,11 +230,7 @@ references:
 
   build_linux_test_wheels: &build_linux_test_wheels
     steps:
-      - run:
-          name: Install software
-          working_directory: /root/code
-          command: yum install -y openssh-clients
-      - *load_code_centos
+      - *load_code
       - *update_submodules
       - run:
           name: Compile Linux wheels
@@ -200,11 +239,7 @@ references:
 
   build_linux_wheels: &build_linux_wheels
     steps:
-      - run:
-          name: Install software
-          working_directory: /root/code
-          command: yum install -y openssh-clients
-      - *load_code_centos
+      - *load_code
       - *update_submodules
       - run:
           name: Compile Linux wheels
@@ -232,44 +267,61 @@ references:
 jobs:
   check-style:
     docker:
-      - image: glotzerlab/ci:2020.01-py38
-    working_directory: ~/ci/freud
+      - image: glotzerlab/ci:2020.10-clang11_py39
     environment:
-      PYVER: "3.8"
+      PYVER: "3.9"
+      PYTHON: "python3.9"
     <<: *load_check_style
+
+  linux-python-39:
+    docker:
+      - image: glotzerlab/ci:2020.10-py39
+    environment:
+      PYVER: "3.9"
+      PYTHON: "python3.9"
+    <<: *build_and_test_linux_with_cov
 
   linux-python-38:
     docker:
-      - image: glotzerlab/ci:2020.01-py38
-    working_directory: ~/ci/freud
+      - image: glotzerlab/ci:2020.10-py38
     environment:
       PYVER: "3.8"
+      PYTHON: "python3.8"
     <<: *build_and_test_linux
 
   linux-python-37:
     docker:
-      - image: glotzerlab/ci:2020.01-py37
-    working_directory: ~/ci/freud
+      - image: glotzerlab/ci:2020.10-py37
     environment:
       PYVER: "3.7"
-    <<: *build_and_test_linux_with_cov
-
-  linux-python-36:
-    docker:
-      - image: glotzerlab/ci:2020.01-py36
-    working_directory: ~/ci/freud
-    environment:
-      PYVER: "3.6"
+      PYTHON: "python3.7"
     <<: *build_and_test_linux
 
-  windows-python-37:
-    executor:
-      name: win/default
-      shell: bash.exe
+  linux-python-36-oldest:
+    docker:
+      - image: glotzerlab/ci:2020.10-py36
     environment:
-      PYVER: ""  # Windows CI image doesn't have aliases for python3.7
-      TBB_INCLUDE: "C:\\tools\\miniconda3\\Library\\include"
-      TBB_LINK: "C:\\tools\\miniconda3\\Library\\lib"
+      PYVER: "3.6"
+      PYTHON: "python3.6"
+      DEPENDENCIES: "OLDEST"
+    <<: *build_and_test_linux
+
+  windows-python-39:
+    environment:
+      PYVER: "3.9"
+      <<: *windows_env
+    <<: *build_and_test_windows
+
+  windows-python-38:
+    environment:
+      PYVER: "3.8"
+      <<: *windows_env
+    <<: *build_and_test_windows
+
+  windows-python-37:
+    environment:
+      PYVER: "3.7"
+      <<: *windows_env
     <<: *build_and_test_windows
 
   test-deploy-pypi-linux:
@@ -300,6 +352,7 @@ jobs:
     working_directory: ~/ci/freud
     environment:
       PYVER: "3.8"
+      PYTHON: "python3.8"
     <<: *build_and_benchmark
 
 workflows:
@@ -307,18 +360,28 @@ workflows:
   test:
     jobs:
       - check-style
+      - linux-python-39
       - linux-python-38:
           requires:
             - check-style
+            - linux-python-39
       - linux-python-37:
           requires:
             - check-style
-      - linux-python-36:
+            - linux-python-39
+      - linux-python-36-oldest:
           requires:
             - check-style
+            - linux-python-39
+      - windows-python-39
+      - windows-python-38:
+          requires:
+            - check-style
+            - windows-python-39
       - windows-python-37:
           requires:
             - check-style
+            - windows-python-39
 # Disabled benchmarks on CI - they currently take too much work
 #     - benchmarks:
 #         requires:
@@ -328,18 +391,26 @@ workflows:
             branches:
               only: /release\/.*/
           requires:
+            - check-style
+            - linux-python-39
             - linux-python-38
             - linux-python-37
-            - linux-python-36
+            - linux-python-36-oldest
+            - windows-python-39
+            - windows-python-38
             - windows-python-37
       - test-deploy-pypi-linux:
           filters:
             branches:
               only: /release\/.*/
           requires:
+            - check-style
+            - linux-python-39
             - linux-python-38
             - linux-python-37
-            - linux-python-36
+            - linux-python-36-oldest
+            - windows-python-39
+            - windows-python-38
             - windows-python-37
 
   deploy:

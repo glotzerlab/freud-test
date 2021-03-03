@@ -27,13 +27,13 @@ ctypedef enum arr_type_t:
 
 
 ctypedef union arr_ptr_t:
-    const void *null_ptr
-    const ManagedArray[float] *float_ptr
-    const ManagedArray[double] *double_ptr
-    const ManagedArray[float complex] *complex_float_ptr
-    const ManagedArray[double complex] *complex_double_ptr
-    const ManagedArray[uint] *uint_ptr
-    const ManagedArray[bool] *bool_ptr
+    void *null_ptr
+    ManagedArray[float] *float_ptr
+    ManagedArray[double] *double_ptr
+    ManagedArray[float complex] *complex_float_ptr
+    ManagedArray[double complex] *complex_double_ptr
+    ManagedArray[uint] *uint_ptr
+    ManagedArray[bool] *bool_ptr
 
 
 cdef class _ManagedArrayContainer:
@@ -53,32 +53,32 @@ cdef class _ManagedArrayContainer:
         if arr_type == arr_type_t.FLOAT:
             obj = _ManagedArrayContainer(arr_type, np.NPY_FLOAT,
                                          element_size)
-            obj.thisptr.float_ptr = new const ManagedArray[float](
+            obj.thisptr.float_ptr = new ManagedArray[float](
                 dereference(<const ManagedArray[float] *>array))
         elif arr_type == arr_type_t.DOUBLE:
             obj = _ManagedArrayContainer(arr_type, np.NPY_DOUBLE,
                                          element_size)
-            obj.thisptr.double_ptr = new const ManagedArray[double](
+            obj.thisptr.double_ptr = new ManagedArray[double](
                 dereference(<const ManagedArray[double] *>array))
         elif arr_type == arr_type_t.COMPLEX_FLOAT:
             obj = _ManagedArrayContainer(arr_type, np.NPY_COMPLEX64,
                                          element_size)
-            obj.thisptr.complex_float_ptr = new const ManagedArray[fcomplex](
+            obj.thisptr.complex_float_ptr = new ManagedArray[fcomplex](
                 dereference(<const ManagedArray[fcomplex] *>array))
         elif arr_type == arr_type_t.COMPLEX_DOUBLE:
             obj = _ManagedArrayContainer(arr_type, np.NPY_COMPLEX128,
                                          element_size)
-            obj.thisptr.complex_double_ptr = new const ManagedArray[dcomplex](
+            obj.thisptr.complex_double_ptr = new ManagedArray[dcomplex](
                 dereference(<const ManagedArray[dcomplex] *>array))
         elif arr_type == arr_type_t.UNSIGNED_INT:
             obj = _ManagedArrayContainer(arr_type, np.NPY_UINT32,
                                          element_size)
-            obj.thisptr.uint_ptr = new const ManagedArray[uint](
+            obj.thisptr.uint_ptr = new ManagedArray[uint](
                 dereference(<const ManagedArray[uint] *>array))
         elif arr_type == arr_type_t.BOOL:
             obj = _ManagedArrayContainer(arr_type, np.NPY_BOOL,
                                          element_size)
-            obj.thisptr.bool_ptr = new const ManagedArray[bool](
+            obj.thisptr.bool_ptr = new ManagedArray[bool](
                 dereference(<const ManagedArray[bool] *>array))
 
         return obj
@@ -93,4 +93,4 @@ cdef inline make_managed_numpy_array(
 
 
 cdef class _Compute:
-    cdef public _called_compute
+    cdef public bool _called_compute

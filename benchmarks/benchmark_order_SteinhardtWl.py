@@ -17,7 +17,7 @@ class BenchmarkOrderSteinhardtWl(Benchmark):
         self.points = np.asarray(np.random.uniform(-self.L/2, self.L/2,
                                                    (N, 3)),
                                  dtype=np.float32)
-        self.lql = freud.order.Steinhardt(self.sph_l, Wl=True)
+        self.lql = freud.order.Steinhardt(self.sph_l, wl=True)
 
     def bench_run(self, N):
         self.lql.compute((self.box, self.points),

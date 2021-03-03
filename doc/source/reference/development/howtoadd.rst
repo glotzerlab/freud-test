@@ -11,12 +11,19 @@ Python
 Python (and Cython) code in **freud** should follow `PEP 8 <https://www.python.org/dev/peps/pep-0008/>`_.
 
 During continuous integration (CI), all Python and Cython code in **freud** is tested with `flake8 <http://flake8.pycqa.org/>`_ to ensure PEP 8 compliance.
-It is strongly recommended to `set up a pre-commit hook <http://flake8.pycqa.org/en/latest/user/using-hooks.html>`_ to ensure code is compliant before pushing to the repository:
+Additionally, all CMake code is tested using `cmakelang's cmake-format <https://cmake-format.readthedocs.io/en/latest/index.html>`__.
+It is strongly recommended to `set up a pre-commit hook <https://pre-commit.com/>`__ to ensure code is compliant before pushing to the repository:
 
 .. code-block:: bash
 
-    flake8 --install-hook git
-    git config --bool flake8.strict true
+    pip install -r requirements-precommit.txt
+    pre-commit install
+
+To manually run `pre-commit <https://pre-commit.com/>`__ for all the files present in the repository, run the following command:
+
+.. code-block:: bash
+
+    pre-commit run --all-files --show-diff-on-failure
 
 Documentation is written in reStructuredText and generated using `Sphinx <http://www.sphinx-doc.org/en/stable/index.html>`_.
 It should be written according to the `Google Python Style Guide <https://github.com/google/styleguide/blob/gh-pages/pyguide.md#38-comments-and-docstrings>`_.
@@ -54,7 +61,7 @@ To keep modules well-organized, **freud** implements the following structure:
 - Python code is stored in the ``freud`` folder at the root of the repository.
 - C++ code is exposed to Python using Cython code contained in pxd files with the following convention: ``freud/_MODULENAME.pxd`` (note the preceding underscore).
 - The core Cython code for modules is contained in ``freud/MODULENAME.pyx`` (no underscore).
-- Generated Cython C++ code (e.g. ``freud/MODULENAME.cpp``) should not be committed during development. These files are updated only at release time.
+- Generated Cython C++ code (e.g. ``freud/MODULENAME.cxx``) should not be committed during development. These files are generated using Cython when building from source, and are unnecessary when installing compiled binaries.
 - If a Cython module contains code that must be imported into other Cython modules (such as the :class:`freud.box.Box` class), the ``pyx`` file must be accompanied by a ``pxd`` file with the same name: ``freud/MODULENAME.pxd`` (distinguished from ``pxd`` files used to expose C++ code by the lack of a preceding underscore). For more information on how ``pxd`` files work, see the `Cython documentation <https://cython.readthedocs.io/en/latest/src/tutorial/pxd_files.html>`_.
 - All tests in **freud** are based on the Python standard :mod:`unittest` library and are contained in the ``tests`` folder. Test files are named by the convention ``tests/test_MODULENAME_CLASSNAME.py``.
 - Benchmarks for **freud** are contained in the ``benchmarks`` directory and are named analogously to tests: ``benchmarks/benchmark_MODULENAME_CLASSNAME.py``.
@@ -84,8 +91,13 @@ Steps for Adding New Code
 Once you've determined to add new code to **freud**, the first step is to create a new branch off of :code:`master`.
 The process of adding code differs based on whether or not you are editing an existing module in **freud**.
 Adding new methods to an existing module in **freud** requires creating the new C++ files in the ``cpp`` directory, modifying the corresponding ``_MODULENAME.pxd`` file in the ``freud`` directory, and creating a wrapper class in ``freud/MODULENAME.pyx``.
-If the new methods belong in a new module, you must create the corresponding ``pxd`` and ``pyx`` files accordingly.
-In addition, you will need to import the new module in ``freud/__init__.py`` by adding :code:`from . import MODULENAME` so that your module is imported by default.
+If the new methods belong in a new module, you must create the corresponding ``cpp`` directory and the ``pxd`` and ``pyx`` files accordingly.
+
+In order for code to compile, it must be added to the relevant ``CMakeLists.txt`` file.
+New C++ files for existing modules must be added to the corresponding ``cpp/MODULENAME/CMakeLists.txt`` file.
+For new modules, a ``cpp/NEWMODULENAME/CMakeLists.txt`` file must be created, and in addition the new module must be added to the ``cpp/CMakeLists.txt`` file in the form of both an ``add_subdirectory`` command and addition to the ``libfreud`` library in the form of an additional source in the ``add_library`` command.
+Similarly, new Cython modules must be added to the appropriate list in the ``freud/CMakeLists.txt`` file depending on whether or not there is C++ code associated with the module.
+Finally, you will need to import the new module in ``freud/__init__.py`` by adding :code:`from . import MODULENAME` so that your module is usable as ``freud.MODULENAME``.
 
 Once the code is added, appropriate tests should be added to the ``tests`` folder.
 Test files are named by the convention ``tests/test_MODULENAME_CLASSNAME.py``.

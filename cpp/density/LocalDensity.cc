@@ -14,8 +14,6 @@ LocalDensity::LocalDensity(float r_max, float diameter)
     : m_box(box::Box()), m_r_max(r_max), m_diameter(diameter)
 {}
 
-LocalDensity::~LocalDensity() {}
-
 void LocalDensity::compute(const freud::locality::NeighborQuery* neighbor_query,
                            const vec3<float>* query_points, unsigned int n_query_points,
                            const freud::locality::NeighborList* nlist, freud::locality::QueryArgs qargs)
@@ -26,11 +24,11 @@ void LocalDensity::compute(const freud::locality::NeighborQuery* neighbor_query,
     m_num_neighbors_array.prepare(n_query_points);
 
     const float area = M_PI * m_r_max * m_r_max;
-    const float volume = float(4.0 / 3.0) * M_PI * m_r_max * m_r_max * m_r_max;
+    const float volume = static_cast<float>(4.0 / 3.0 * M_PI) * m_r_max * m_r_max * m_r_max;
     // compute the local density
     freud::locality::loopOverNeighborsIterator(
         neighbor_query, query_points, n_query_points, qargs, nlist,
-        [=](size_t i, std::shared_ptr<freud::locality::NeighborPerPointIterator> ppiter) {
+        [=](size_t i, const std::shared_ptr<freud::locality::NeighborPerPointIterator>& ppiter) {
             float num_neighbors = 0;
             for (freud::locality::NeighborBond nb = ppiter->next(); !ppiter->end(); nb = ppiter->next())
             {

@@ -4,7 +4,7 @@
 #include "RotationalAutocorrelation.h"
 
 #include "utils.h"
-#include <math.h>
+#include <cmath>
 
 /*! \file RotationalAutocorrelation.cc
     \brief Implements the RotationalAutocorrelation class.
@@ -21,33 +21,32 @@ inline std::complex<float> cpow(std::complex<float> base, unsigned int p)
 {
     if (p == 0)
     {
-        return std::complex<float>(1, 0);
+        return {1, 0};
     }
-    else
+    std::complex<float> val(base);
+    for (unsigned int i = 1; i < p; i++)
     {
-        std::complex<float> val(base);
-        for (unsigned int i = 1; i < p; i++)
-            val *= base;
-        return val;
+        val *= base;
     }
+    return val;
 }
 
 inline std::complex<float> RotationalAutocorrelation::hypersphere_harmonic(const std::complex<float> xi,
                                                                            std::complex<float> zeta,
-                                                                           const unsigned int a,
-                                                                           const unsigned int b)
+                                                                           const unsigned int m1,
+                                                                           const unsigned int m2)
 {
     const std::complex<float> xi_conj = std::conj(xi);
     const std::complex<float> zeta_conj = std::conj(zeta);
 
     // Doing a summation over non-negative exponents, which requires the additional inner conditional.
     std::complex<float> sum_tracker(0, 0);
-    for (unsigned int k = (a + b < m_l ? 0 : a + b - m_l); k <= std::min(a, b); k++)
+    for (unsigned int k = (m1 + m2 < m_l ? 0 : m1 + m2 - m_l); k <= std::min(m1, m2); k++)
     {
-        float fact_product
-            = m_factorials[k] * m_factorials[m_l + k - a - b] * m_factorials[a - k] * m_factorials[b - k];
-        sum_tracker += cpow(xi_conj, k) * cpow(zeta, b - k) * cpow(zeta_conj, a - k)
-            * cpow(-xi, m_l + k - a - b) / fact_product;
+        float fact_product = static_cast<float>(m_factorials[k]) * m_factorials[m_l + k - m1 - m2]
+            * m_factorials[m1 - k] * m_factorials[m2 - k];
+        sum_tracker += cpow(xi_conj, k) * cpow(zeta, m2 - k) * cpow(zeta_conj, m1 - k)
+            * cpow(-xi, m_l + k - m1 - m2) / fact_product;
     }
     return sum_tracker;
 }
@@ -70,8 +69,9 @@ void RotationalAutocorrelation::compute(const quat<float>* ref_orientations, con
         for (unsigned int b = 0; b <= m_l; b++)
         {
             unit_harmonics.push_back(std::conj(hypersphere_harmonic(xi, zeta, a, b)));
-            prefactors[a][b] = m_factorials[a] * m_factorials[m_l - a] * m_factorials[b]
-                * m_factorials[m_l - b] / (float(m_l) + 1);
+            prefactors[a][b] = static_cast<float>(m_factorials[a] * m_factorials[m_l - a] * m_factorials[b]
+                                                  * m_factorials[m_l - b])
+                / (static_cast<float>(m_l + 1));
         }
     }
 
@@ -105,7 +105,7 @@ void RotationalAutocorrelation::compute(const quat<float>* ref_orientations, con
     {
         RA_sum += std::real(m_RA_array[i]);
     }
-    m_Ft = RA_sum / N;
+    m_Ft = RA_sum / static_cast<float>(N);
 };
 
 }; }; // end namespace freud::order

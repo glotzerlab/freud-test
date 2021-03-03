@@ -26,7 +26,7 @@ public:
     LocalDensity(float r_max, float diameter);
 
     //! Destructor
-    ~LocalDensity();
+    ~LocalDensity() = default;
 
     //! Get the simulation box
     const box::Box& getBox() const

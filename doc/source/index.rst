@@ -29,6 +29,7 @@ Table of Contents
    modules/cluster
    modules/data
    modules/density
+   modules/diffraction
    modules/environment
    modules/interface
    modules/locality

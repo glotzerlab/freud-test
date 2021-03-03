@@ -12,8 +12,8 @@ class TestVoronoi(unittest.TestCase):
         # Test that voronoi tessellations of random systems have the same
         # number of points and polytopes
         L = 10  # Box length
-        N = 50  # Number of particles
-        box, points = freud.data.make_random_system(L, N, is2D=True)
+        N = 5000  # Number of particles
+        box, points = freud.data.make_random_system(L, N, is2D=True, seed=100)
         vor = freud.locality.Voronoi()
         vor.compute((box, points))
 
@@ -47,8 +47,8 @@ class TestVoronoi(unittest.TestCase):
         # Test that voronoi tessellations of random systems have the same
         # number of points and polytopes
         L = 10  # Box length
-        N = 50  # Number of particles
-        box, points = freud.data.make_random_system(L, N, is2D=False)
+        N = 5000  # Number of particles
+        box, points = freud.data.make_random_system(L, N, is2D=False, seed=100)
         vor = freud.locality.Voronoi()
         vor.compute((box, points))
 

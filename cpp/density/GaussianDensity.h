@@ -28,7 +28,7 @@ public:
     GaussianDensity(vec3<unsigned int> width, float r_max, float sigma);
 
     // Destructor
-    ~GaussianDensity() {}
+    ~GaussianDensity() = default;
 
     //! Get the simulation box.
     const box::Box& getBox() const
@@ -49,7 +49,7 @@ public:
     }
 
     //! Compute the density.
-    void compute(const freud::locality::NeighborQuery* nq);
+    void compute(const freud::locality::NeighborQuery* nq, const float* values = nullptr);
 
     //! Get a reference to the last computed density.
     const util::ManagedArray<float>& getDensity() const;

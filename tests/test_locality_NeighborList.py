@@ -151,17 +151,17 @@ class TestNeighborList(unittest.TestCase):
         npt.assert_equal(nlist.segments, nlist2.segments)
 
         # too few reference particles
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(ValueError):
             freud.locality.NeighborList.from_arrays(
                 3, 4, query_point_indices, point_indices, distances)
 
         # too few target particles
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(ValueError):
             freud.locality.NeighborList.from_arrays(
                 4, 3, query_point_indices, point_indices, distances)
 
         # query particles not sorted
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(ValueError):
             freud.locality.NeighborList.from_arrays(
                 4, 4, point_indices, query_point_indices, distances)
 
@@ -248,6 +248,23 @@ class TestNeighborList(unittest.TestCase):
         sorted_tuples = list(sorted(tuples))
 
         self.assertEqual(tuples, sorted_tuples)
+
+    def test_num_points(self):
+        query_point_indices = [0, 0, 1, 2, 3]
+        point_indices = [1, 2, 3, 0, 0]
+        distances = np.ones(len(query_point_indices))
+
+        # test num_query_points and num_points when built from arrays
+        nlist = freud.locality.NeighborList.from_arrays(
+            42, 99, query_point_indices, point_indices, distances)
+        self.assertEqual(nlist.num_query_points, 42)
+        self.assertEqual(nlist.num_points, 99)
+
+        # test num_query_points and num_points when built from a query
+        nlist = self.nq.query(self.nq.points[:-1],
+                              self.query_args).toNeighborList()
+        self.assertEqual(nlist.num_query_points, len(self.nq.points)-1)
+        self.assertEqual(nlist.num_points, len(self.nq.points))
 
 
 if __name__ == '__main__':

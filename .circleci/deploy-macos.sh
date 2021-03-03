@@ -27,11 +27,16 @@ if [ -z $1 ]; then
 fi
 
 export MACOSX_DEPLOYMENT_TARGET=10.12
-# Get pyenv
+# When homebrew installs pyenv it tries to update the Python patch versions to
+# the latest. Those updates automatically delete the older versions (e.g.
+# 3.8.5->3.8.6 leads to the 3.8.5 folder being deleted), but then homebrew
+# tries to delete them again and causes errors. To avoid this issue, we update
+# manually here for the current main version of Python (required by pyenv).
+brew upgrade python@3.8
 brew install pyenv
 eval "$(pyenv init -)"
 # Check supported versions with pyenv install --list
-PY_VERSIONS=(3.5.7 3.6.9 3.7.4 3.8.1)
+PY_VERSIONS=(3.6.12 3.7.9 3.8.6 3.9.0)
 
 # Build TBB
 git clone https://github.com/intel/tbb.git
@@ -51,7 +56,7 @@ for VERSION in ${PY_VERSIONS[@]}; do
   pyenv global ${VERSION}
 
   pip install --upgrade pip
-  pip install cython --no-deps --ignore-installed -q --progress-bar=off
+  pip install cython scikit-build cmake --ignore-installed -q --progress-bar=off
   rm -rf numpy-1.14.6
   curl -sSLO https://github.com/numpy/numpy/archive/v1.14.6.tar.gz
   tar -xzf v1.14.6.tar.gz
@@ -75,7 +80,8 @@ for VERSION in ${PY_VERSIONS[@]}; do
   pyenv global ${VERSION}
 
   pip install freud_analysis --no-deps --no-index -f ~/ci/freud/wheelhouse
-  pip install -U -r ~/ci/freud/requirements-testing.txt
+  # Don't install MDAnalysis and skip the relevant tests.
+  cat ~/ci/freud/requirements-testing.txt | grep -v MDAnalysis | xargs -n 1 pip install -U --progress-bar=off
   cd ~/ci/freud/tests
   python -m unittest discover . -v
 done

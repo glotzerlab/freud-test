@@ -11,10 +11,6 @@
 
 namespace freud { namespace environment {
 
-LocalBondProjection::LocalBondProjection() {}
-
-LocalBondProjection::~LocalBondProjection() {}
-
 // The set of all equivalent quaternions equiv_qs is the set that takes the particle as it
 // is defined to some global reference orientation. Thus, to be safe, we must include
 // a rotation by qconst as defined below when doing the calculation.
@@ -23,13 +19,12 @@ LocalBondProjection::~LocalBondProjection() {}
 // the chiral symmetry group of the particle shape.
 // q and -q effect the same rotation on vectors, and here we just use equiv_quats to
 // find all symmetrically equivalent vectors to proj_vec.
-float computeMaxProjection(const vec3<float> proj_vec, const vec3<float> local_bond,
+float computeMaxProjection(const vec3<float>& proj_vec, const vec3<float>& local_bond,
                            const quat<float>* equiv_qs, unsigned int n_equiv_qs)
 {
     quat<float> qconst = equiv_qs[0];
 
     // start with the reference vector before it has been rotated by equivalent quaternions
-    vec3<float> max_proj_vec = proj_vec;
     float max_proj = dot(proj_vec, local_bond);
 
     // loop through all equivalent rotations and see if they have a larger projection onto local_bond
@@ -45,7 +40,6 @@ float computeMaxProjection(const vec3<float> proj_vec, const vec3<float> local_b
         if (proj_test > max_proj)
         {
             max_proj = proj_test;
-            max_proj_vec = equiv_proj_vec;
         }
     }
 

@@ -351,7 +351,7 @@ def main_compare(args):
             desc = benchmark_desc(info["name"], info["params"])
             print("TOO SLOW (beyond threshold of {})".format(threshold))
             print("\t" + desc)
-            print("\t\tratio = {}".format(info["ratio"], threshold))
+            print("\t\tratio = {}".format(info["ratio"]))
 
 
 if __name__ == '__main__':

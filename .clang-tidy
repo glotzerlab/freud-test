@@ -1,0 +1,27 @@
+# Specific checks ignored:
+# misc-no-recursion: Rewriting things like the NeighborList to avoid recursion is out of scope for now.
+# misc-non-private-member-variables-in-classes: We make extensive use of protected members, for instance in PMFT* classes from BondHistogramCompute, and the argument that this is _never_ OK is not terribly convincing.
+# modernize-return-braced-init-list: This format for returning is less readable for inexperienced C++ programmers.
+# modernize-use-trailing-return-type: This syntax is still generally unfamiliar to many developers and will make the code harder to maintain.
+# readability-avoid-const-params-in-decls: While it may be semantically confusing, it's easier to read when declaration and definition consts match.
+# readability-function-cognitive-complexity: Some heavily nested functions trigger this, it could be possible to rewrite these but that's out of scope at the moment.
+# readability-magic-numbers: Wigner3j contains (necessary) magic numbers.
+# readability-redundant-member-init: If the constructor changes or if there are multiple constructor signatures, prefer to be explicit.
+
+Checks: 'bugprone-*,
+         cert-*,
+         clang-analyzer-*,
+         cppcoreguidlines-*,
+         misc-*,
+         modernize-*,
+         performance-*,
+         portability-*,
+         readability-*,
+         -misc-no-recursion,
+         -misc-non-private-member-variables-in-classes,
+         -modernize-return-braced-init-list,
+         -modernize-use-trailing-return-type,
+         -readability-avoid-const-params-in-decls,
+         -readability-function-cognitive-complexity,
+         -readability-magic-numbers,
+         -readability-redundant-member-init'

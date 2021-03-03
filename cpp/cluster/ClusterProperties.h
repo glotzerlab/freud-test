@@ -29,7 +29,7 @@ class ClusterProperties
 {
 public:
     //! Constructor
-    ClusterProperties() {}
+    ClusterProperties() = default;
 
     //! Compute properties of the point clusters
     void compute(const freud::locality::NeighborQuery* nq, const unsigned int* cluster_idx);

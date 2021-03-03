@@ -61,15 +61,15 @@ public:
      *  \param l Spherical harmonic number l.
      *           Must be a positive number.
      */
-    Steinhardt(unsigned int l, bool average = false, bool wl = false, bool weighted = false,
-               bool wl_normalize = false)
-        : m_Np(0), m_l(l), m_num_ms(2 * l + 1), m_average(average), m_wl(wl), m_weighted(weighted),
+    explicit Steinhardt(unsigned int l, bool average = false, bool wl = false, bool weighted = false,
+                        bool wl_normalize = false)
+        : m_l(l), m_num_ms(2 * l + 1), m_average(average), m_wl(wl), m_weighted(weighted),
           m_wl_normalize(wl_normalize), m_qlm_local(2 * l + 1)
 
     {}
 
     //! Empty destructor
-    ~Steinhardt() {};
+    ~Steinhardt() = default;
 
     //! Get the number of particles used in the last compute
     unsigned int getNP() const
@@ -84,10 +84,7 @@ public:
         {
             return m_wli;
         }
-        else
-        {
-            return getQl();
-        }
+        return getQl();
     }
 
     //! Get the last calculated ql
@@ -97,10 +94,7 @@ public:
         {
             return m_qliAve;
         }
-        else
-        {
-            return m_qli;
-        }
+        return m_qli;
     }
 
     //! Get the last calculated qlm for each particle
@@ -152,7 +146,7 @@ private:
     //! \internal
     //! Spherical harmonics calculation for Ylm filling a
     //  std::vector<std::complex<float> > with values for m = -l..l.
-    void computeYlm(const float theta, const float phi, std::vector<std::complex<float>>& Ylm);
+    void computeYlm(const float theta, const float phi, std::vector<std::complex<float>>& Ylm) const;
 
     template<typename T> std::shared_ptr<T> makeArray(size_t size);
 
@@ -174,11 +168,11 @@ private:
 
     //! Sum over Wigner 3j coefficients to compute third-order invariants
     //  wl from second-order invariants ql
-    void aggregatewl(util::ManagedArray<float>& target, util::ManagedArray<std::complex<float>>& source,
-                     util::ManagedArray<float>& normalization_source);
+    void aggregatewl(util::ManagedArray<float>& target, const util::ManagedArray<std::complex<float>>& source,
+                     const util::ManagedArray<float>& normalization_source) const;
 
     // Member variables used for compute
-    unsigned int m_Np;     //!< Last number of points computed
+    unsigned int m_Np {0}; //!< Last number of points computed
     unsigned int m_l;      //!< Spherical harmonic l value.
     unsigned int m_num_ms; //!< The number of magnetic quantum numbers (2*m_l+1).
 
@@ -196,7 +190,7 @@ private:
     util::ManagedArray<std::complex<float>>
         m_qlmiAve; //!< Averaged qlm with 2nd neighbor shell for each particle i
     util::ManagedArray<std::complex<float>> m_qlmAve; //!< Normalized qlmiAve for the whole system
-    float m_norm;                                     //!< System normalized order parameter
+    float m_norm {0};                                 //!< System normalized order parameter
     util::ManagedArray<float>
         m_wli; //!< wl order parameter for each particle i, also used for wl averaged data
 };

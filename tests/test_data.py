@@ -5,7 +5,7 @@ import numpy as np
 from util import sort_rounded_xyz_array
 
 
-class TestData(unittest.TestCase):
+class TestUnitCell(unittest.TestCase):
     def test_square(self):
         """Test that the square lattice is correctly generated."""
         box, points = freud.data.UnitCell.square().generate_system()
@@ -103,7 +103,7 @@ class TestData(unittest.TestCase):
         npt.assert_allclose(deltas, 0, atol=4*sigma)
 
     def test_seed(self):
-        """Ensure that seeding does not overwrite the global state."""
+        """Ensure that seeding does not overwrite the global random state."""
         num_points = 10
         sigma = 0.01
 
@@ -117,6 +117,36 @@ class TestData(unittest.TestCase):
         third_rand = np.random.randint(num_points)
         box, points = freud.data.UnitCell.fcc().generate_system(
             sigma_noise=sigma, seed=2)
+        fourth_rand = np.random.randint(num_points)
+
+        npt.assert_array_equal(first_rand, third_rand)
+        npt.assert_array_equal(second_rand, fourth_rand)
+
+
+class TestRandomSystem(unittest.TestCase):
+    def test_sizes_and_dimensions(self):
+        for N in (0, 1, 10, 100, 1000):
+            for is2D in (True, False):
+                box, points = freud.data.make_random_system(
+                    box_size=10, num_points=N, is2D=is2D)
+                self.assertEqual(points.shape, (N, 3))
+                self.assertEqual(box.is2D, is2D)
+
+    def test_seed(self):
+        """Ensure that seeding does not overwrite the global random state."""
+        box_size = 10
+        num_points = 10
+
+        np.random.seed(0)
+        first_rand = np.random.randint(num_points)
+        box, points = freud.data.make_random_system(
+            box_size=box_size, num_points=num_points, seed=1)
+        second_rand = np.random.randint(num_points)
+
+        np.random.seed(0)
+        third_rand = np.random.randint(num_points)
+        box, points = freud.data.make_random_system(
+            box_size=box_size, num_points=num_points, seed=2)
         fourth_rand = np.random.randint(num_points)
 
         npt.assert_array_equal(first_rand, third_rand)

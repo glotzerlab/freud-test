@@ -451,3 +451,68 @@ def voronoi_plot(box, polytopes, ax=None, color_by_sides=True, cmap=None):
         cb.set_label("Number of sides")
         cb.set_ticks(bounds)
     return ax
+
+
+def diffraction_plot(diffraction, k_values, ax=None, cmap='afmhot',
+                     vmin=4e-6, vmax=0.7):
+    """Helper function to plot diffraction pattern.
+
+    Args:
+        diffraction (:class:`numpy.ndarray`):
+            Diffraction image data.
+        k_values (:class:`numpy.ndarray`):
+            :math:`k` value magnitudes for each bin of the diffraction image.
+        ax (:class:`matplotlib.axes.Axes`):
+            Axes object to plot. If :code:`None`, make a new axes and figure
+            object (Default value = :code:`None`).
+        cmap (str):
+            Colormap name to use (Default value = :code:`'afmhot'`).
+        vmin (float):
+            Minimum of the color scale (Default value = 4e-6).
+        vmax (float):
+            Maximum of the color scale (Default value = 0.7).
+
+    Returns:
+        :class:`matplotlib.axes.Axes`: Axes object with the diagram.
+    """
+    import matplotlib.colors
+    from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
+    from matplotlib.colorbar import Colorbar
+
+    if ax is None:
+        fig = plt.figure()
+        ax = fig.subplots()
+
+    # Plot the diffraction image and color bar
+    norm = matplotlib.colors.LogNorm(vmin=vmin, vmax=vmax)
+    im = ax.imshow(np.clip(diffraction, vmin, vmax),
+                   interpolation='nearest', cmap=cmap, norm=norm)
+    ax_divider = make_axes_locatable(ax)
+    cax = ax_divider.append_axes("right", size="7%", pad="10%")
+    cb = Colorbar(cax, im)
+    cb.set_label(r"$S(\vec{k})$")
+
+    # Determine the number of ticks on the axis
+    grid_size = diffraction.shape[0]
+    num_ticks = len([i for i in ax.xaxis.get_ticklocs()
+                     if 0 <= i <= grid_size])
+
+    # Ensure there are an odd number of ticks, so that there is a tick at zero
+    num_ticks += (1 - num_ticks % 2)
+    ticks = np.linspace(0, grid_size, num_ticks)
+
+    # Set tick locations and labels
+    tick_labels = np.interp(ticks, range(grid_size), k_values)
+    tick_labels = ['{:.3g}'.format(x) for x in tick_labels]
+    ax.xaxis.set_ticks(ticks)
+    ax.xaxis.set_ticklabels(tick_labels)
+    ax.yaxis.set_ticks(ticks)
+    ax.yaxis.set_ticklabels(tick_labels)
+
+    # Set title, limits, aspect
+    ax.set_title('Diffraction Pattern')
+    ax.set_aspect('equal', 'datalim')
+    ax.set_xlabel('$k_x$')
+    ax.set_ylabel('$k_y$')
+
+    return ax

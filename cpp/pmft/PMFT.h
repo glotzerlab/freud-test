@@ -33,7 +33,7 @@ public:
     PMFT() : BondHistogramCompute() {}
 
     //! Destructor
-    virtual ~PMFT() {};
+    ~PMFT() override = default;
 
     //! Get a reference to the PCF array
     const util::ManagedArray<float>& getPCF()
@@ -60,15 +60,17 @@ protected:
      *  least one angular term, but that term should not contain a factor of
      *  2*PI since that factor is effectively divided out of the volume here.
      *
-     *  \param JacobFactor A function with one parameter (the histogram bin index) that returns the volume of the element in the histogram bin corresponding to the index.
+     *  \param JacobFactor A function with one parameter (the histogram bin index) that returns the volume of
+     * the element in the histogram bin corresponding to the index.
      */
     template<typename JacobFactor> void reduce(JacobFactor jf)
     {
         m_pcf_array.prepare(m_histogram.shape());
         m_histogram.prepare(m_histogram.shape());
 
-        float inv_num_dens = m_box.getVolume() / (float) m_n_query_points;
-        float norm_factor = (float) 1.0 / ((float) m_frame_counter * (float) m_n_points);
+        float inv_num_dens = m_box.getVolume() / static_cast<float>(m_n_query_points);
+        float norm_factor
+            = float(1.0) / (static_cast<float>(m_frame_counter) * static_cast<float>(m_n_points));
         float prefactor = inv_num_dens * norm_factor;
 
         m_histogram.reduceOverThreadsPerBin(m_local_histograms, [this, &prefactor, &jf](size_t i) {

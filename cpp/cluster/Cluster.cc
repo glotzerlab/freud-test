@@ -82,8 +82,10 @@ void Cluster::compute(const freud::locality::NeighborQuery* nq, const freud::loc
         size_t cluster_idx = cluster_reindex[cluster_label[s]];
         m_cluster_idx[i] = cluster_idx;
         unsigned int key = i;
-        if (keys != NULL)
+        if (keys != nullptr)
+        {
             key = keys[i];
+        }
         m_cluster_keys[cluster_idx].push_back(key);
     }
 }
@@ -104,18 +106,17 @@ std::vector<size_t> Cluster::sort_indexes_inverse(const std::vector<size_t>& cou
             // If the counts are unequal, return the largest cluster first.
             return counts[i1] > counts[i2];
         }
-        else
-        {
-            // If the counts are equal, return the cluster with the smallest
-            // point id first.
-            return min_ids[i1] < min_ids[i2];
-        }
+        // If the counts are equal, return the cluster with the smallest
+        // point id first.
+        return min_ids[i1] < min_ids[i2];
     });
 
     // Invert the permutation.
     std::vector<size_t> inv_idx(idx.size());
     for (size_t i = 0; i < idx.size(); i++)
+    {
         inv_idx[idx[i]] = i;
+    }
     return inv_idx;
 }
 

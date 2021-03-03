@@ -1,3 +1,14 @@
-recursive-include cpp *.cc *.h
+recursive-include cpp *.cc *.h CMakeLists.txt
+recursive-include CMake *
 recursive-include extern *
-include LICENSE pyproject.toml
+recursive-include freud *.py *.pyx *.pxd *.pxi CMakeLists.txt
+include CMakeLists.txt
+include CONTRIBUTING.md
+include ChangeLog.md
+include LICENSE
+include README.rst
+include contributors.txt
+include pyproject.toml
+include requirements*.txt
+include setup.cfg
+include setup.py

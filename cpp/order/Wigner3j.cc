@@ -35,7 +35,7 @@ float reduceWigner3j(const std::complex<float>* source, unsigned int l_, const s
      * m3 = -m1 - m2
      */
 
-    const int l(l_); // Create signed int for simplicity of following code
+    const int l(static_cast<int>(l_)); // Create signed int for simplicity of following code
     float result = 0;
     unsigned int counter = 0;
     for (int m1 = -l; m1 <= l; m1++)

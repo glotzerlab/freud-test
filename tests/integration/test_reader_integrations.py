@@ -5,6 +5,12 @@ import os
 import sys
 import unittest
 
+try:
+    import MDAnalysis
+    MDANALYSIS = True
+except ImportError:
+    MDANALYSIS = False
+
 
 def _relative_path(*path):
     return os.path.join(os.path.dirname(__file__), *path)
@@ -28,13 +34,13 @@ class TestReaderIntegrations(unittest.TestCase):
 
     @unittest.skipIf(sys.platform.startswith("win"),
                      "Not supported on Windows.")
+    @unittest.skipIf(not MDANALYSIS, "MDAnalysis is not installed.")
     def test_mdanalysis_gsd(self):
-        import MDAnalysis
         reader = MDAnalysis.coordinates.GSD.GSDReader(LJ_GSD)
         self.run_analyses(reader)
 
+    @unittest.skipIf(not MDANALYSIS, "MDAnalysis is not installed.")
     def test_mdanalysis_dcd(self):
-        import MDAnalysis
         reader = MDAnalysis.coordinates.DCD.DCDReader(LJ_DCD)
         self.run_analyses(reader)
 

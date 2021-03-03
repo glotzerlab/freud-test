@@ -4,7 +4,42 @@ The format is based on
 and this project adheres to
 [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## v2.3.0 - 2020-xx-xx
+## next
+
+### Changed
+* NeighborList `filter` method has been optimized.
+
+## v2.4.1 - 2020-11-16
+
+### Fixed
+* Python 3.8 builds with Windows MSVC were broken due to an unrecognized CMake compiler option.
+* Fixed broken documentation by overriding scikit-build options.
+* RPATH on Linux is now set correctly to find TBB libraries not on the global search path.
+* 2D box image calculations now return zero for the image z value.
+
+## v2.4.0 - 2020-11-09
+
+### Added
+* The Box class has a method `contains` to determine particle membership in a box.
+* NeighborList class exposes `num_points` and `num_query_points` attributes.
+* `compute` method of `GaussianDensity` class has a `values` argument.
+* Support for pre-commit hooks.
+* Python 3.9 is supported.
+
+### Changed
+* NeighborList raises a `ValueError` instead of a `RuntimeError` if provided invalid constructor arguments.
+* freud now builds using scikit-build (requires CMake).
+
+### Deprecated
+* `freud.order.Translational`
+
+### Fixed
+* Source distributions now include Cython source files.
+* Hexatic order parameter (unweighted) normalizes by number of neighbors instead of the symmetry order k.
+* Particles with an i-j normal vector of [0, 0, 0] are excluded from 2D Voronoi NeighborList computations for numerical stability reasons.
+* Memory leak in `makeDefaultNlist` function where a NeighborList was being allocated and not freed.
+
+## v2.3.0 - 2020-08-03
 
 ### Added
 * Support for garnett 0.7.
@@ -12,8 +47,9 @@ and this project adheres to
 * The Box class has methods `compute_distances` and `compute_all_distances` to calculate distances between arrays of points and query points.
 * Hexatic can now compute 2D Minkowski Structure Metrics, using `weighted=True` along with a Voronoi NeighborList.
 * Examples have been added to the Cluster, Density, Environment, and Order Modules.
-* Module examples have been integrated with doctests to ensure they are up to date with API
+* Module examples have been integrated with doctests to ensure they are up to date with API.
 * SphereVoxelization class in the `density` module computes a grid of voxels occupied by spheres.
+* `freud.diffraction.DiffractionPattern` class (unstable) can be used to compute 2D diffraction patterns.
 
 ### Changed
 * Cython is now a required dependency (not optional). Cythonized `.cpp` files have been removed.
@@ -23,8 +59,11 @@ and this project adheres to
 * Histogram bin locations are computed in a more numerically stable way.
 * Improved error handling of Cubatic input parameters.
 * PMFTs are now properly normalized such that the pair correlation function tends to unity for an ideal gas.
-* PMFTXYT uses the correct orientations when points and query\_points differ.
+* PMFTXYT uses the correct orientations when `points` and `query_points` differ.
 * GaussianDensity Gaussian normalization in 2D systems has been corrected.
+
+### Removed
+* Python 3.5 is no longer supported. Python 3.6+ is required.
 
 ## v2.2.0 - 2020-02-24
 

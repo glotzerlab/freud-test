@@ -302,30 +302,30 @@ cdef class NeighborQuery:
                 :code:`box` and :code:`points`.
         """
 
-        def match_class_path(obj, match):
-            for cls in inspect.getmro(type(obj)):
-                if cls.__module__ + '.' + cls.__name__ == match:
-                    return True
-            return False
+        def _match_class_path(obj, *matches):
+            return any(cls.__module__ + '.' + cls.__name__ in matches
+                       for cls in inspect.getmro(type(obj)))
 
         if isinstance(system, cls):
             return system
 
         # MDAnalysis compatibility
-        elif match_class_path(system, 'MDAnalysis.coordinates.base.Timestep'):
+        elif _match_class_path(system, 'MDAnalysis.coordinates.base.Timestep'):
             system = (system.triclinic_dimensions, system.positions)
 
-        # GSD compatibility
-        elif match_class_path(system, 'gsd.hoomd.Snapshot'):
+        # GSD and HOOMD-blue 3 snapshot compatibility
+        elif _match_class_path(system,
+                               'gsd.hoomd.Snapshot',
+                               'hoomd.snapshot.Snapshot'):
             # Explicitly construct the box to silence warnings from box
-            # constructor because GSD sets Lz=1 rather than 0 for 2D boxes.
-            box = system.configuration.box.copy()
+            # constructor, HOOMD simulations often have Lz=1 for 2D boxes.
+            box = np.array(system.configuration.box)
             if system.configuration.dimensions == 2:
                 box[[2, 4, 5]] = 0
             system = (box, system.particles.position)
 
         # garnett compatibility (garnett >=0.5)
-        elif match_class_path(system, 'garnett.trajectory.Frame'):
+        elif _match_class_path(system, 'garnett.trajectory.Frame'):
             try:
                 # garnett >= 0.7
                 position = system.position
@@ -335,15 +335,17 @@ cdef class NeighborQuery:
             system = (system.box, position)
 
         # OVITO compatibility
-        elif (match_class_path(system, 'ovito.data.DataCollection') or
-              match_class_path(system,
-                               'ovito.plugins.PyScript.DataCollection')):
+        elif _match_class_path(
+                system,
+                'ovito.data.DataCollection',
+                'ovito.plugins.PyScript.DataCollection',
+                'PyScript.DataCollection'):
             box = freud.Box.from_box(
                 system.cell.matrix[:, :3],
                 dimensions=2 if system.cell.is2D else 3)
             system = (box, system.particles.positions)
 
-        # HOOMD-blue snapshot compatibility
+        # HOOMD-blue 2 snapshot compatibility
         elif (hasattr(system, 'box') and hasattr(system, 'particles') and
               hasattr(system.particles, 'position')):
             # Explicitly construct the box to silence warnings from box
@@ -476,6 +478,7 @@ cdef class NeighborList:
         R"""Create a NeighborList from a set of bond information arrays.
 
         Example::
+
             import freud
             import numpy as np
             box = freud.box.Box(2, 3, 4, 0, 0, 0)
@@ -483,7 +486,8 @@ cdef class NeighborList:
             points = np.array([[0, 0, -1], [0.5, -1, 0]])
             query_point_indices = np.array([0, 0, 1])
             point_indices = np.array([0, 1, 1])
-            distances = box.compute_distances(query_points[query_point_indices], points[point_indices])
+            distances = box.compute_distances(
+                query_points[query_point_indices], points[point_indices])
             num_query_points = len(query_points)
             num_points = len(points)
             nlist = freud.locality.NeighborList.from_arrays(
@@ -637,6 +641,22 @@ cdef class NeighborList:
         R"""Returns the number of bonds stored in this object."""
         return self.thisptr.getNumBonds()
 
+    @property
+    def num_query_points(self):
+        """unsigned int: The number of query points.
+
+        All query point indices are less than this value.
+        """
+        return self.thisptr.getNumQueryPoints()
+
+    @property
+    def num_points(self):
+        """unsigned int: The number of points.
+
+        All point indices are less than this value.
+        """
+        return self.thisptr.getNumPoints()
+
     def find_first_index(self, unsigned int i):
         R"""Returns the lowest bond index corresponding to a query particle
         with an index :math:`\geq i`.
@@ -663,7 +683,7 @@ cdef class NeighborList:
         """  # noqa E501
         filt = np.ascontiguousarray(filt, dtype=np.bool)
         cdef np.ndarray[np.uint8_t, ndim=1, cast=True] filt_c = filt
-        cdef cbool * filt_ptr = <cbool*> &filt_c[0]
+        cdef const cbool * filt_ptr = <cbool*> &filt_c[0]
         self.thisptr.filter(filt_ptr)
         return self
 
@@ -994,7 +1014,7 @@ cdef class _SpatialHistogram(_PairCompute):
     @property
     def nbins(self):
         """:class:`list`: The number of bins in each dimension of the
-        histogram"""
+        histogram."""
         return list(self.histptr.getAxisSizes())
 
     def _reset(self):
@@ -1041,7 +1061,7 @@ cdef class _SpatialHistogram1D(_SpatialHistogram):
 
     @property
     def nbins(self):
-        """int: The number of bins in the histogram"""
+        """int: The number of bins in the histogram."""
         return self.histptr.getAxisSizes()[0]
 
 
@@ -1268,12 +1288,12 @@ cdef class Voronoi(_Compute):
             ax (:class:`matplotlib.axes.Axes`): Axis to plot on. If
                 :code:`None`, make a new figure and axis.
                 (Default value = :code:`None`)
-        color_by_sides (bool):
-            If :code:`True`, color cells by the number of sides.
-            If :code:`False`, random colors are used for each cell.
-            (Default value = :code:`True`)
-        cmap (str):
-            Colormap name to use (Default value = :code:`None`).
+            color_by_sides (bool):
+                If :code:`True`, color cells by the number of sides.
+                If :code:`False`, random colors are used for each cell.
+                (Default value = :code:`True`)
+            cmap (str):
+                Colormap name to use (Default value = :code:`None`).
 
         Returns:
             :class:`matplotlib.axes.Axes`: Axis with the plot.

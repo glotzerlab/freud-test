@@ -51,6 +51,8 @@ Vyas Ramasubramani - **Lead developer**
 * Fixed handling of 2D systems from various data sources.
 * Fixed usage of query orientations in PMFTXY, PMFTXYT and PMFTXYZ when points and query points are not identical.
 * Refactored and standardized PMFT tests.
+* Rewrote build system to use scikit-build.
+* Added support for pre-commit hooks.
 
 Bradley Dice - **Lead developer**
 
@@ -106,6 +108,12 @@ Bradley Dice - **Lead developer**
 * Worked with Tommy Waltmann to add the SphereVoxelization feature.
 * Fixed GaussianDensity normalization in 2D systems.
 * Prevented GaussianDensity from computing 3D systems after it has computed 2D systems.
+* Contributed code, design, and testing for ``DiffractionPattern`` class.
+* Fixed ``Hexatic`` order parameter (unweighted) to normalize by number of neighbors instead of the symmetry order k.
+* Added ``num_query_points`` and ``num_points`` attributes to NeighborList class.
+* Added scikit-build support for Windows.
+* Fixed 2D image calculations.
+* Optimized NeighborList ``filter`` method.
 
 Eric Harper, University of Michigan - **Former lead developer**
 
@@ -263,12 +271,15 @@ Kelly Wang
 
 * Enabled NeighborList indexing.
 * Added methods ``compute_distances`` and ``compute_all_distances`` to Box.
+* Added method ``crop`` to Box.
+* Added 2D Box tests for ``get_image`` and ``contains``.
 
 Yezhi Jin
 
 * Added support for 2D arrays in the Python interface to Box functions.
 * Rewrote Voronoi implementation to leverage voro++.
 * Implemented Voronoi bond weighting to enable Minkowski structure metrics.
+* Contributed code, design, and testing for ``DiffractionPattern`` class.
 
 Brandon Butler
 
@@ -297,6 +308,15 @@ Michael Stryk
 Tommy Waltmann
 
 * Worked with Bradley Dice to add the SphereVoxelization feature.
+* Contributed code, design, and testing for ``DiffractionPattern`` class.
+
+Maya Martirossyan
+
+* Added test for Steinhardt for particles without neighbors.
+
+Pavel Buslaev
+
+* Added ``values`` argument to compute method of ``GaussianDensity`` class.
 
 Source code
 -----------

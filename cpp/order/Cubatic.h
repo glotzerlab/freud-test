@@ -6,6 +6,7 @@
 
 #include "ManagedArray.h"
 #include "VectorMath.h"
+#include <array>
 #include <random>
 
 /*! \file Cubatic.h
@@ -23,8 +24,8 @@ namespace freud { namespace order {
  */
 struct tensor4
 {
-    tensor4();
-    tensor4(vec3<float> _vector);
+    tensor4() = default;
+    explicit tensor4(const vec3<float>& vector);
     tensor4 operator+=(const tensor4& b);
     tensor4 operator-(const tensor4& b) const;
     tensor4 operator*(const float& b) const;
@@ -32,7 +33,7 @@ struct tensor4
 
     void copyToManagedArray(util::ManagedArray<float>& ma);
 
-    float data[81];
+    std::array<float, 81> data {0};
 };
 
 //! Compute the cubatic order parameter for a set of points
@@ -58,7 +59,7 @@ public:
     Cubatic(float t_initial, float t_final, float scale, unsigned int replicates, unsigned int seed);
 
     //! Destructor
-    ~Cubatic() {}
+    ~Cubatic() = default;
 
     //! Reset the bond order array to all zeros
     void reset();
@@ -141,7 +142,7 @@ private:
      *
      *  \return The value of the cubatic order parameter.
      */
-    float calcCubaticOrderParameter(const tensor4& cubatic_tensor, const tensor4& global_tensor) const;
+    static float calcCubaticOrderParameter(const tensor4& cubatic_tensor, const tensor4& global_tensor);
 
     //! Calculate the per-particle tensor.
     /*! Implements the first line of eq. 27, the calculation of M.
@@ -171,10 +172,10 @@ private:
     float m_scale;               //!< Scaling factor to reduce temperature.
     unsigned int m_n_replicates; //!< Number of replicates.
     unsigned int m_seed;         //!< Random seed.
-    unsigned int m_n;            //!< Last number of points computed.
+    unsigned int m_n {0};        //!< Last number of points computed.
 
-    float m_cubatic_order_parameter;   //!< The value of the order parameter.
-    quat<float> m_cubatic_orientation; //!< The cubatic orientation.
+    float m_cubatic_order_parameter {0}; //!< The value of the order parameter.
+    quat<float> m_cubatic_orientation;   //!< The cubatic orientation.
 
     tensor4 m_gen_r4_tensor; //!< The sum of various products of Kronecker deltas that is stored as a member
                              //!< for convenient reuse.
@@ -184,7 +185,8 @@ private:
         m_global_tensor; //!< The system-averaged homogeneous tensor encoding all particle orientations.
     util::ManagedArray<float> m_cubatic_tensor; //!< The output tensor computed via simulated annealing.
 
-    vec3<float> m_system_vectors[3]; //!< The global coordinate system, always use a simple Euclidean basis.
+    std::array<vec3<float>, 3>
+        m_system_vectors; //!< The global coordinate system, always use a simple Euclidean basis.
 };
 
 }; }; // end namespace freud::order

@@ -4,6 +4,7 @@
 #ifndef RAW_POINTS_H
 #define RAW_POINTS_H
 
+#include <memory>
 #include <stdexcept>
 
 #include "AABBQuery.h"
@@ -27,13 +28,13 @@ namespace freud { namespace locality {
 class RawPoints : public NeighborQuery
 {
 public:
-    RawPoints() {}
+    RawPoints() = default;
 
     RawPoints(const box::Box& box, const vec3<float>* points, unsigned int n_points)
         : NeighborQuery(box, points, n_points)
     {}
 
-    ~RawPoints() {}
+    ~RawPoints() override = default;
 
     //! Perform a query based on a set of query parameters.
     /*! Shadow parent function to ensure that the underlying AABBQuery is
@@ -44,12 +45,12 @@ public:
      *  \param n_query_points The number of query points.
      *  \param qargs The query arguments that should be used to find neighbors.
      */
-    virtual std::shared_ptr<NeighborQueryIterator>
-    query(const vec3<float>* query_points, unsigned int n_query_points, QueryArgs query_args) const
+    std::shared_ptr<NeighborQueryIterator> query(const vec3<float>* query_points, unsigned int n_query_points,
+                                                 QueryArgs query_args) const override
     {
         if (!aq)
         {
-            aq = std::unique_ptr<AABBQuery>(new AABBQuery(m_box, m_points, m_n_points));
+            aq = std::make_unique<AABBQuery>(m_box, m_points, m_n_points);
         }
 
         this->validateQueryArgs(query_args);
@@ -57,8 +58,8 @@ public:
     }
 
     // dummy implementation for pure virtual function in the parent class
-    virtual std::shared_ptr<NeighborQueryPerPointIterator>
-    querySingle(const vec3<float> query_point, unsigned int query_point_idx, QueryArgs qargs) const
+    std::shared_ptr<NeighborQueryPerPointIterator>
+    querySingle(const vec3<float> query_point, unsigned int query_point_idx, QueryArgs qargs) const override
     {
         if (!aq)
         {

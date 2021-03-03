@@ -15,6 +15,7 @@ import freud.util
 
 from freud.util cimport vec3
 from cpython.object cimport Py_EQ, Py_NE
+from libcpp cimport bool as cpp_bool
 
 cimport freud._box
 cimport numpy as np
@@ -28,8 +29,10 @@ np.import_array()
 cdef class Box:
     R"""The freud Box class for simulation boxes.
 
-    This class defines an arbitrary triclinic geometry within which all points
-    are confined. For more information, see the `documentation
+    This class defines an arbitrary triclinic geometry within which all points are confined.
+    By convention, the freud Box is centered at the origin (``[0, 0, 0]``),
+    with the extent in each dimension described by the half-open interval ``[-L/2, L/2)``.
+    For more information, see the `documentation
     <https://freud.readthedocs.io/en/stable/gettingstarted/tutorial/periodic.html>`_
     on boxes and periodic boundary conditions.
 
@@ -241,8 +244,8 @@ cdef class Box:
         cdef const float[:, ::1] l_points = vecs
         cdef const int[:, ::1] l_result = images
         cdef unsigned int Np = l_points.shape[0]
-        self.thisptr.getImage(<vec3[float]*> &l_points[0, 0], Np,
-                              <vec3[int]*> &l_result[0, 0])
+        self.thisptr.getImages(<vec3[float]*> &l_points[0, 0], Np,
+                               <vec3[int]*> &l_result[0, 0])
 
         return np.squeeze(images) if flatten else images
 
@@ -494,6 +497,52 @@ cdef class Box:
 
         return np.asarray(distances)
 
+    def contains(self, points):
+        R"""Returns boolean array (mask) corresponding to point membership in a box.
+
+        This calculation computes particle membership based on conventions defined by :class:`Box`, ignoring periodicity.
+        This means that in a cubic (3D) box with dimensions ``L``, particles would be considered inside the box if their coordinates are between
+        ``[-L/2, L/2]``.
+        Particles laying at a coordinate such as ``[0, L, 0]`` would be considered outside the box.
+        More information about coordinate conventions can be found `here
+        <https://freud.readthedocs.io/en/latest/gettingstarted/examples/module_intros/box.Box.html?highlight=origin#Using-boxes>`__
+        and `here <https://freud.readthedocs.io/en/latest/gettingstarted/tutorial/periodic.html?highlight=origin#periodic-boundary-conditions>`__.
+
+        Example::
+
+            >>> import freud
+            >>> box = freud.Box.cube(10)
+            >>> points = [[-4, 0, 0], [10, 0, 0], [0, -7, 0]]
+            >>> box.contains(points)
+            array([ True, False, False])
+
+        Args:
+            points (:math:`\left(N, 3\right)` :class:`numpy.ndarray`):
+                Array of points.
+
+        Returns:
+            :math:`\left(N, \right)` :class:`numpy.ndarray`:
+                Array of booleans, where `True` corresponds to points within the box,
+                and `False` corresponds to points outside the box.
+        """  # noqa: E501
+
+        points = freud.util._convert_array(
+            np.atleast_2d(points), shape=(None, 3))
+
+        cdef:
+            const float[:, ::1] l_points = points
+            size_t n_all_points = points.shape[0]
+
+        contains_mask = freud.util._convert_array(
+            np.ones(n_all_points), dtype=np.bool)
+        cdef cpp_bool[::1] l_contains_mask = contains_mask
+
+        self.thisptr.contains(
+            <vec3[float]*> &l_points[0, 0], n_all_points,
+            <cpp_bool*> &l_contains_mask[0])
+
+        return np.array(l_contains_mask).astype(np.bool)
+
     @property
     def periodic(self):
         """:math:`\\left(3, \\right)` :class:`numpy.ndarray`: Get or set the
@@ -541,6 +590,7 @@ cdef class Box:
         R"""Return box as dictionary.
 
         Example::
+
             >>> box = freud.box.Box.cube(L=10)
             >>> box.to_dict()
             {'Lx': 10.0, 'Ly': 10.0, 'Lz': 10.0,
@@ -562,6 +612,7 @@ cdef class Box:
         R"""Returns the box matrix (3x3).
 
         Example::
+
             >>> box = freud.box.Box.cube(L=10)
             >>> box.to_matrix()
             array([[10.,  0.,  0.],

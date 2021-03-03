@@ -25,7 +25,7 @@ void IteratorLinkCell::copy(const IteratorLinkCell& rhs)
     m_cell = rhs.m_cell;
 }
 
-bool IteratorLinkCell::atEnd()
+bool IteratorLinkCell::atEnd() const
 {
     return (m_cur_idx == LINK_CELL_TERMINATOR);
 }
@@ -63,12 +63,12 @@ void IteratorCellShell::operator++()
     case 0:
         ++m_current_x;
         wrapped = m_current_x >= m_range;
-        m_current_x -= 2 * wrapped * m_range;
+        m_current_x -= 2 * static_cast<int>(wrapped) * m_range;
         if (!m_is2D)
         {
-            m_current_z += wrapped;
+            m_current_z += static_cast<int>(wrapped);
             wrapped = m_current_z >= m_range;
-            m_current_z += wrapped * (1 - 2 * m_range);
+            m_current_z += static_cast<int>(wrapped) * (1 - 2 * m_range);
         }
         if (wrapped)
         {
@@ -82,12 +82,12 @@ void IteratorCellShell::operator++()
     case 1:
         --m_current_y;
         wrapped = m_current_y <= -m_range;
-        m_current_y += 2 * wrapped * m_range;
+        m_current_y += 2 * static_cast<int>(wrapped) * m_range;
         if (!m_is2D)
         {
-            m_current_z += wrapped;
+            m_current_z += static_cast<int>(wrapped);
             wrapped = m_current_z >= m_range;
-            m_current_z += wrapped * (1 - 2 * m_range);
+            m_current_z += static_cast<int>(wrapped) * (1 - 2 * m_range);
         }
         if (wrapped)
         {
@@ -101,12 +101,12 @@ void IteratorCellShell::operator++()
     case 2:
         --m_current_x;
         wrapped = m_current_x <= -m_range;
-        m_current_x += 2 * wrapped * m_range;
+        m_current_x += 2 * static_cast<int>(wrapped) * m_range;
         if (!m_is2D)
         {
-            m_current_z += wrapped;
+            m_current_z += static_cast<int>(wrapped);
             wrapped = m_current_z >= m_range;
-            m_current_z += wrapped * (1 - 2 * m_range);
+            m_current_z += static_cast<int>(wrapped) * (1 - 2 * m_range);
         }
         if (wrapped)
         {
@@ -120,17 +120,19 @@ void IteratorCellShell::operator++()
     case 3:
         ++m_current_y;
         wrapped = m_current_y >= m_range;
-        m_current_y -= 2 * wrapped * m_range;
+        m_current_y -= 2 * static_cast<int>(wrapped) * m_range;
         if (!m_is2D)
         {
-            m_current_z += wrapped;
+            m_current_z += static_cast<int>(wrapped);
             wrapped = m_current_z >= m_range;
-            m_current_z += wrapped * (1 - 2 * m_range);
+            m_current_z += static_cast<int>(wrapped) * (1 - 2 * m_range);
         }
         if (wrapped)
         {
             if (m_is2D) // we're done for this range
+            {
                 reset(m_range + 1);
+            }
             else
             {
                 ++m_stage;
@@ -155,10 +157,10 @@ void IteratorCellShell::operator++()
     default:
         ++m_current_x;
         wrapped = m_current_x > m_range;
-        m_current_x -= wrapped * (2 * m_range + 1);
-        m_current_y += wrapped;
+        m_current_x -= static_cast<int>(wrapped) * (2 * m_range + 1);
+        m_current_y += static_cast<int>(wrapped);
         wrapped = m_current_y > m_range;
-        m_current_y -= wrapped * (2 * m_range + 1);
+        m_current_y -= static_cast<int>(wrapped) * (2 * m_range + 1);
         if (wrapped)
         {
             // 2D cases have already moved to the next stage by
@@ -168,7 +170,9 @@ void IteratorCellShell::operator++()
 
             // if we're done, move on to the next range
             if (m_stage > 5)
+            {
                 reset(m_range + 1);
+            }
         }
         break;
     }
@@ -176,7 +180,10 @@ void IteratorCellShell::operator++()
 
 void IteratorCellShell::reset(unsigned int range)
 {
-    m_range = range;
+    // The range is always a positive integer, but since we have to iterate
+    // over both positive and negative shells we store m_range as a signed
+    // integer.
+    m_range = static_cast<int>(range);
     m_stage = 0;
     m_current_x = -m_range;
     m_current_y = m_range;
@@ -202,10 +209,10 @@ void IteratorCellShell::reset(unsigned int range)
  ********************/
 
 // Default constructor
-LinkCell::LinkCell() : NeighborQuery(), m_n_points(0), m_cell_width(0), m_celldim(0, 0, 0) {}
+LinkCell::LinkCell() : NeighborQuery() {}
 
 LinkCell::LinkCell(const box::Box& box, const vec3<float>* points, unsigned int n_points, float cell_width)
-    : NeighborQuery(box, points, n_points), m_n_points(0), m_cell_width(cell_width), m_celldim(0, 0, 0)
+    : NeighborQuery(box, points, n_points), m_cell_width(cell_width)
 {
     // If no cell width is provided, we calculate the system density and
     // estimate the number of cells that would lead to 10 particles per cell.
@@ -215,9 +222,9 @@ LinkCell::LinkCell(const box::Box& box, const vec3<float>* points, unsigned int 
         // This number is arbitrary because there is no way to determine an
         // appropriate cell density for an arbitrary triclinic box.
         const unsigned int num_particle_per_cell = 10;
-        unsigned int desired_num_cells
+        const unsigned int desired_num_cells
             = std::max(n_points / num_particle_per_cell, static_cast<unsigned int>(1));
-        m_cell_width = std::cbrtf(box.getVolume() / desired_num_cells);
+        m_cell_width = std::cbrtf(box.getVolume() / static_cast<float>(desired_num_cells));
     }
 
     m_celldim = computeDimensions(box, m_cell_width);
@@ -260,7 +267,7 @@ unsigned int LinkCell::getCellIndex(const vec3<int> cellCoord) const
     return coordToIndex(x, y, z);
 }
 
-const vec3<unsigned int> LinkCell::computeDimensions(const box::Box& box, float cell_width) const
+vec3<unsigned int> LinkCell::computeDimensions(const box::Box& box, float cell_width)
 {
     vec3<unsigned int> dim;
 
@@ -284,11 +291,17 @@ const vec3<unsigned int> LinkCell::computeDimensions(const box::Box& box, float 
     // writing), but this function will return the correct dimensions
     // required anyways.
     if (dim.x == 0)
+    {
         dim.x = 1;
+    }
     if (dim.y == 0)
+    {
         dim.y = 1;
+    }
     if (dim.z == 0)
+    {
         dim.z = 1;
+    }
     return dim;
 }
 
@@ -298,7 +311,6 @@ void LinkCell::computeCellList(const vec3<float>* points, unsigned int n_points)
     unsigned int Nc = getNumCells();
     m_cell_list.prepare(n_points + Nc);
     m_n_points = n_points;
-    m_Nc = Nc;
 
     // initialize memory
     for (unsigned int cell = 0; cell < Nc; cell++)
@@ -306,8 +318,8 @@ void LinkCell::computeCellList(const vec3<float>* points, unsigned int n_points)
         m_cell_list[n_points + cell] = LINK_CELL_TERMINATOR;
     }
 
-    // generate the cell list
-    for (int i = n_points - 1; i >= 0; i--)
+    // Generate the cell list.
+    for (unsigned int i = n_points - 1; i != static_cast<unsigned int>(-1); --i)
     {
         unsigned int cell = getCell(points[i]);
         m_cell_list[i] = m_cell_list[n_points + cell];
@@ -325,7 +337,7 @@ vec3<unsigned int> LinkCell::indexToCoord(unsigned int x) const
     return vec3<unsigned int>(coord[2], coord[1], coord[0]);
 }
 
-unsigned int LinkCell::coordToIndex(int x, int y, int z) const
+unsigned int LinkCell::coordToIndex(unsigned int x, unsigned int y, unsigned int z) const
 {
     // For backwards compatibility with the Index1D layout, the indices and
     // the dimensions are passed in reverse to the indexer. Changing this would
@@ -335,7 +347,7 @@ unsigned int LinkCell::coordToIndex(int x, int y, int z) const
         {static_cast<unsigned int>(z), static_cast<unsigned int>(y), static_cast<unsigned int>(x)});
 }
 
-vec3<unsigned int> LinkCell::getCellCoord(const vec3<float> p) const
+vec3<unsigned int> LinkCell::getCellCoord(const vec3<float>& p) const
 {
     vec3<float> alpha = m_box.makeFractional(p);
     vec3<unsigned int> c;
@@ -358,10 +370,7 @@ const std::vector<unsigned int>& LinkCell::getCellNeighbors(unsigned int cell) c
     {
         return a->second;
     }
-    else
-    {
-        return computeCellNeighbors(cell);
-    }
+    return computeCellNeighbors(cell);
 }
 
 const std::vector<unsigned int>& LinkCell::computeCellNeighbors(unsigned int cur_cell) const
@@ -373,8 +382,12 @@ const std::vector<unsigned int>& LinkCell::computeCellNeighbors(unsigned int cur
     const int k = static_cast<int>(l_idx.z);
 
     // loop over the neighbor cells
-    int starti, startj, startk;
-    int endi, endj, endk;
+    int starti;
+    int startj;
+    int startk;
+    int endi;
+    int endj;
+    int endk;
     if (m_celldim.x < 3)
     {
         starti = i;
@@ -425,21 +438,27 @@ const std::vector<unsigned int>& LinkCell::computeCellNeighbors(unsigned int cur
         endk = k + 1;
     }
     if (m_box.is2D())
+    {
         startk = endk = k;
+    }
 
     for (int neighk = startk; neighk <= endk; neighk++)
+    {
         for (int neighj = startj; neighj <= endj; neighj++)
+        {
             for (int neighi = starti; neighi <= endi; neighi++)
             {
                 // wrap back into the box
-                int wrapi = (m_celldim.x + neighi) % m_celldim.x;
-                int wrapj = (m_celldim.y + neighj) % m_celldim.y;
-                int wrapk = (m_celldim.z + neighk) % m_celldim.z;
+                unsigned int wrapi = (m_celldim.x + neighi) % m_celldim.x;
+                unsigned int wrapj = (m_celldim.y + neighj) % m_celldim.y;
+                unsigned int wrapk = (m_celldim.z + neighk) % m_celldim.z;
 
                 unsigned int neigh_cell = coordToIndex(wrapi, wrapj, wrapk);
                 // add to the list
                 neighbor_cells.push_back(neigh_cell);
             }
+        }
+    }
 
     // sort the list
     std::sort(neighbor_cells.begin(), neighbor_cells.end());
@@ -455,20 +474,17 @@ std::shared_ptr<NeighborQueryPerPointIterator>
 LinkCell::querySingle(const vec3<float> query_point, unsigned int query_point_idx, QueryArgs args) const
 {
     this->validateQueryArgs(args);
-    if (args.mode == QueryArgs::ball)
+    if (args.mode == QueryType::ball)
     {
         return std::make_shared<LinkCellQueryBallIterator>(this, query_point, query_point_idx, args.r_max,
                                                            args.r_min, args.exclude_ii);
     }
-    else if (args.mode == QueryArgs::nearest)
+    if (args.mode == QueryType::nearest)
     {
         return std::make_shared<LinkCellQueryIterator>(this, query_point, query_point_idx, args.num_neighbors,
                                                        args.r_max, args.r_min, args.exclude_ii);
     }
-    else
-    {
-        throw std::runtime_error("Invalid query mode provided to generic query function.");
-    }
+    throw std::runtime_error("Invalid query mode provided to generic query function.");
 }
 
 NeighborBond LinkCellQueryBallIterator::next()
@@ -513,7 +529,9 @@ NeighborBond LinkCellQueryBallIterator::next()
             // shell is greater than our r_max.
             ++m_neigh_cell_iter;
 
-            if ((m_neigh_cell_iter.getRange() - m_extra_search_width) * m_linkcell->getCellWidth() > m_r_max)
+            if (static_cast<float>(m_neigh_cell_iter.getRange() - m_extra_search_width)
+                    * m_linkcell->getCellWidth()
+                > m_r_max)
             {
                 out_of_range = true;
                 break;
@@ -540,7 +558,7 @@ NeighborBond LinkCellQueryBallIterator::next()
     }
 
     m_finished = true;
-    return NeighborQueryIterator::ITERATOR_TERMINATOR;
+    return ITERATOR_TERMINATOR;
 }
 
 NeighborBond LinkCellQueryIterator::next()
@@ -554,7 +572,8 @@ NeighborBond LinkCellQueryIterator::next()
     {
         min_plane_distance = std::min(min_plane_distance, plane_distance.z);
     }
-    unsigned int max_range = std::ceil(min_plane_distance / (2 * m_linkcell->getCellWidth())) + 1;
+    unsigned int max_range
+        = static_cast<unsigned int>(std::ceil(min_plane_distance / (2 * m_linkcell->getCellWidth()))) + 1;
 
     vec3<unsigned int> point_cell(m_linkcell->getCellCoord(m_query_point));
     const unsigned int point_cell_index = m_linkcell->getCellIndex(
@@ -562,7 +581,7 @@ NeighborBond LinkCellQueryIterator::next()
     m_searched_cells.insert(point_cell_index);
 
     // Loop over cell list neighbor shells relative to this point's cell.
-    if (!m_current_neighbors.size())
+    if (m_current_neighbors.empty())
     {
         // Expand search cell radius until termination conditions are met.
         while (m_neigh_cell_iter != IteratorCellShell(max_range, m_neighbor_query->getBox().is2D()))
@@ -584,7 +603,9 @@ NeighborBond LinkCellQueryIterator::next()
                     const vec3<float> r_ij(m_neighbor_query->getBox().wrap((*m_linkcell)[j] - m_query_point));
                     const float r_sq(dot(r_ij, r_ij));
                     if (r_sq < r_max_sq && r_sq >= r_min_sq)
+                    {
                         m_current_neighbors.emplace_back(m_query_point_idx, j, std::sqrt(r_sq));
+                    }
                 }
             }
 
@@ -619,7 +640,7 @@ NeighborBond LinkCellQueryIterator::next()
             std::sort(m_current_neighbors.begin(), m_current_neighbors.end());
             if ((m_current_neighbors.size() >= m_num_neighbors)
                 && (m_current_neighbors[m_num_neighbors - 1].distance
-                    < (m_neigh_cell_iter.getRange() - 1) * m_linkcell->getCellWidth()))
+                    < static_cast<float>(m_neigh_cell_iter.getRange() - 1) * m_linkcell->getCellWidth()))
             {
                 break;
             }
@@ -632,13 +653,13 @@ NeighborBond LinkCellQueryIterator::next()
         if (m_current_neighbors[m_count - 1].distance > m_r_max)
         {
             m_finished = true;
-            return NeighborQueryIterator::ITERATOR_TERMINATOR;
+            return ITERATOR_TERMINATOR;
         }
         return m_current_neighbors[m_count - 1];
     }
 
     m_finished = true;
-    return NeighborQueryIterator::ITERATOR_TERMINATOR;
+    return ITERATOR_TERMINATOR;
 }
 
 }; }; // end namespace freud::locality

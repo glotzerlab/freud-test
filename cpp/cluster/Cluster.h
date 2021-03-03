@@ -41,11 +41,11 @@ class Cluster
 {
 public:
     //! Constructor
-    Cluster() {}
+    Cluster() = default;
 
     //! Compute the point clusters.
     void compute(const freud::locality::NeighborQuery* nq, const freud::locality::NeighborList* nlist,
-                 freud::locality::QueryArgs qargs, const unsigned int* keys = NULL);
+                 freud::locality::QueryArgs qargs, const unsigned int* keys = nullptr);
 
     //! Get the total number of clusters.
     unsigned int getNumClusters() const

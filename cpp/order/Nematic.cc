@@ -13,7 +13,7 @@
 namespace freud { namespace order {
 
 // m_u is the molecular axis, normalized to a unit vector
-Nematic::Nematic(vec3<float> u) : m_n(0), m_u(u / std::sqrt(dot(u, u))), m_nematic_tensor_local({3, 3}) {}
+Nematic::Nematic(const vec3<float>& u) : m_u(u / std::sqrt(dot(u, u))) {}
 
 float Nematic::getNematicOrderParameter() const
 {
@@ -89,7 +89,9 @@ void Nematic::compute(quat<float>* orientations, unsigned int n)
 
     // Normalize by the number of particles
     for (unsigned int i = 0; i < m_nematic_tensor.size(); ++i)
-        m_nematic_tensor[i] /= m_n;
+    {
+        m_nematic_tensor[i] /= static_cast<float>(m_n);
+    }
 
     // the order parameter is the eigenvector belonging to the largest eigenvalue
     util::ManagedArray<float> eval = util::ManagedArray<float>(3);

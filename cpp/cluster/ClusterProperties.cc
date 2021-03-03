@@ -76,7 +76,7 @@ void ClusterProperties::compute(const freud::locality::NeighborQuery* nq, const 
     // Normalize by the cluster size.
     for (unsigned int c = 0; c < num_clusters; c++)
     {
-        float s = float(m_cluster_sizes[c]);
+        auto s = static_cast<float>(m_cluster_sizes[c]);
         m_cluster_gyrations(c, 0, 0) /= s;
         m_cluster_gyrations(c, 0, 1) /= s;
         m_cluster_gyrations(c, 0, 2) /= s;

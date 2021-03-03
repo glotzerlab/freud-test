@@ -11,16 +11,22 @@
 
 namespace freud { namespace locality {
 
-void PeriodicBuffer::compute(const freud::locality::NeighborQuery* neighbor_query, const vec3<float> buff,
+void PeriodicBuffer::compute(const freud::locality::NeighborQuery* neighbor_query, const vec3<float>& buff,
                              const bool use_images)
 {
     m_box = neighbor_query->getBox();
     if (buff.x < 0)
+    {
         throw std::invalid_argument("Buffer x distance must be non-negative.");
+    }
     if (buff.y < 0)
+    {
         throw std::invalid_argument("Buffer y distance must be non-negative.");
+    }
     if (buff.z < 0)
+    {
         throw std::invalid_argument("Buffer z distance must be non-negative.");
+    }
 
     // Get the box dimensions
     vec3<float> L(m_box.getL());
@@ -33,8 +39,9 @@ void PeriodicBuffer::compute(const freud::locality::NeighborQuery* neighbor_quer
     if (use_images)
     {
         images = vec3<int>(std::ceil(buff.x), std::ceil(buff.y), std::ceil(buff.z));
-        m_buffer_box = freud::box::Box((1 + images.x) * L.x, (1 + images.y) * L.y, (1 + images.z) * L.z, xy,
-                                       xz, yz, is2D);
+        m_buffer_box
+            = freud::box::Box(static_cast<float>(1 + images.x) * L.x, static_cast<float>(1 + images.y) * L.y,
+                              static_cast<float>(1 + images.z) * L.z, xy, xz, yz, is2D);
     }
     else
     {
@@ -45,9 +52,6 @@ void PeriodicBuffer::compute(const freud::locality::NeighborQuery* neighbor_quer
 
     if (is2D)
     {
-        L.z = 0;
-        xz = 0;
-        yz = 0;
         images.z = 0;
     }
 

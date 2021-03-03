@@ -1,18 +1,23 @@
-  1750	Vyas Ramasubramani <vramasub@umich.edu>
-  1463	Bradley Dice <bdice@bradleydice.com>
+  2066	Vyas Ramasubramani <vramasub@umich.edu>
+  1773	Bradley Dice <bdice@bradleydice.com>
   1030	Eric Harper <harperic@umich.edu>
    456	Jin Soo Ihm <jinihm@umich.edu>
    278	Joshua A. Anderson <joaander@umich.edu>
    240	Matthew Spellings <mspells@umich.edu>
+   159	Kelly Wang <kelwang@umich.edu>
    110	Erin Teich <erteich@umich.edu>
     66	M. Eric Irrgang <eirrgang@umich.edu>
     53	Chrisy Du <xiyudu@umich.edu>
     43	Brandon Butler <butlerbr@umich.edu>
+    41	Yezhi Jin <jinyezhi@umich.edu>
     40	Antonio Osorio <aosorio@umich.edu>
-    40	Yezhi Jin <jinyezhi@umich.edu>
+    35	Michael Stryk <mstryk@umich.edu>
     31	Richmond Newman <newmanrs@umich.edu>
+    30	Tommy Waltmann <tomwalt@umich.edu>
     25	Carl Simon Adorf <csadorf@umich.edu>
     22	Jens Glaser <jsglaser@umich.edu>
+    17	dependabot <dependabot[bot]@users.noreply.github.com>
+    13	Pavel Buslaev <pbuslaev@gmail.com>
     12	Tim Moore <mootimot@umich.edu>
     10	Benjamin Schultz <baschult@umich.edu>
     10	Bryan VanSaders <bvansade@umich.edu>
@@ -22,6 +27,7 @@
      8	Fengyi Gao <gaofy@umich.edu>
      8	Ryan Marson <rmarson@umich.edu>
      6	Allen LaCour <alacour@umich.edu>
+     6	Pengji Zhou <zhoupj@umich.edu>
      6	Tom Grubb <tgrubb@umich.edu>
      6	Yina Geng <yinageng@umich.edu>
      5	Alex Dutton <alxdttn@umich.edu>
@@ -34,6 +40,7 @@
      3	James Proctor <jproc@umich.edu>
      3	Rose Cersonsky <rosecers@umich.edu>
      3	Wenbo Shen <shenwb@umich.edu>
+     2	Maya Martirossyan <mmm457@cornell.edu>
      1	Jiwoong Yu <jiwoongs0510@gmail.com>
-     1	Kelly Wang <kelwang@umich.edu>
+     1	Patrick Lawton <plawton@umich.edu>
      1	Paul Dodd <pdodd@umich.edu>

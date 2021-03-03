@@ -111,7 +111,7 @@ In this case, that means there are two required allocations; returning copies wo
 
 To achieve this goal, ``ManagedArray`` objects store a pointer to a pointer.
 Multiple ``ManagedArray`` objects can point to the same data array, and the pointers are all shared pointers to automate deletion of arrays when no references remain.
-The key using the class properly is the ``prepare`` method, which checks the reference count to determine whether it's safe to simply zero out the existing memory or if it needs to allocate a new array. 
+The key using the class properly is the ``prepare`` method, which checks the reference count to determine whether it's safe to simply zero out the existing memory or if it needs to allocate a new array.
 In the above example, when ``compute`` is called a second time the ``rdf1`` object in Python still refers to the computed data, so ``prepare`` will detect that there are multiple (two) shared pointers pointing to the data and choose to reallocate the class's ``ManagedArray`` storing the RDF.
 By calling ``prepare`` at the top of every ``compute`` method, developers ensure that the array used for the rest of the method has been properly zeroed out, and they do not need to worry about whether reallocation is needed (including cases where array sizes change).
 

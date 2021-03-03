@@ -71,7 +71,6 @@ inline void forLoopWrapper2D(size_t begin_row, size_t end_row, size_t begin_col,
     }
 }
 
-
 }; }; // namespace freud::util
 
 #endif

@@ -4,6 +4,7 @@
 #ifndef AABB_TREE_H
 #define AABB_TREE_H
 
+#include <array>
 #include <cstring>
 #include <stack>
 #include <stdexcept>
@@ -27,8 +28,8 @@
 
 namespace freud { namespace locality {
 
-const unsigned int NODE_CAPACITY = 16;        //!< Maximum number of particles in a node
-const unsigned int INVALID_NODE = 0xffffffff; //!< Invalid node index sentinel
+constexpr unsigned int NODE_CAPACITY = 16;        //!< Maximum number of particles in a node
+constexpr unsigned int INVALID_NODE = 0xffffffff; //!< Invalid node index sentinel
 
 //! Node in an AABBTree
 /*! Stores data for a node in the AABB tree
@@ -49,9 +50,10 @@ struct CACHE_ALIGN AABBNode
     unsigned int parent; //!< Index of the parent node
     unsigned int skip;   //!< Number of array indices to skip to get to the next node in an in order traversal
 
-    unsigned int particles[NODE_CAPACITY];     //!< Indices of the particles contained in the node
-    unsigned int particle_tags[NODE_CAPACITY]; //!< Corresponding particle tags for particles in node
-    unsigned int num_particles;                //!< Number of particles contained in the node
+    std::array<unsigned int, NODE_CAPACITY> particles; //!< Indices of the particles contained in the node
+    std::array<unsigned int, NODE_CAPACITY>
+        particle_tags;          //!< Corresponding particle tags for particles in node
+    unsigned int num_particles; //!< Number of particles contained in the node
 };
 
 //! AABB Tree
@@ -83,28 +85,30 @@ class AABBTree
 {
 public:
     //! Construct an AABBTree
-    AABBTree() : m_nodes(0), m_num_nodes(0), m_node_capacity(0), m_root(0) {}
+    AABBTree() = default;
 
     // Destructor
     ~AABBTree()
     {
-        if (m_nodes)
+        if (m_nodes != nullptr)
+        {
             posix_memalign_free(m_nodes);
+        }
     }
 
     //! Copy constructor
     AABBTree(const AABBTree& from)
+        : m_num_nodes(from.m_num_nodes), m_node_capacity(from.m_node_capacity), m_root(from.m_root),
+          m_mapping(from.m_mapping)
     {
-        m_num_nodes = from.m_num_nodes;
-        m_node_capacity = from.m_node_capacity;
-        m_root = from.m_root;
-        m_mapping = from.m_mapping;
-
-        m_nodes = NULL;
-
-        if (from.m_nodes)
+        if (from.m_nodes != nullptr)
         {
             // allocate memory
+            // cppcheck doesn't understand posix_memalign very well and thinks it returns a pointer.
+            // This problem has either been fixed in newer versions of cppcheck
+            // or no longer arises on newer machines, but we observe this
+            // failure on our CI rigs.
+            // cppcheck-suppress AssignmentAddressToInteger
             int retval = posix_memalign((void**) &m_nodes, 32, m_node_capacity * sizeof(AABBNode));
             if (retval != 0)
             {
@@ -119,19 +123,26 @@ public:
     //! Copy assignment
     AABBTree& operator=(const AABBTree& from)
     {
+        if (this == &from)
+        {
+            return *this;
+        }
         m_num_nodes = from.m_num_nodes;
         m_node_capacity = from.m_node_capacity;
         m_root = from.m_root;
         m_mapping = from.m_mapping;
 
-        if (m_nodes)
+        if (m_nodes != nullptr)
+        {
             posix_memalign_free(m_nodes);
+        }
 
-        m_nodes = NULL;
+        m_nodes = nullptr;
 
-        if (from.m_nodes)
+        if (from.m_nodes != nullptr)
         {
             // allocate memory
+            // cppcheck-suppress AssignmentAddressToInteger
             int retval = posix_memalign((void**) &m_nodes, 32, m_node_capacity * sizeof(AABBNode));
             if (retval != 0)
             {
@@ -228,10 +239,10 @@ public:
     }
 
 private:
-    AABBNode* m_nodes;                   //!< The nodes of the tree
-    unsigned int m_num_nodes;            //!< Number of nodes
-    unsigned int m_node_capacity;        //!< Capacity of the nodes array
-    unsigned int m_root;                 //!< Index to the root node of the tree
+    AABBNode* m_nodes {nullptr};         //!< The nodes of the tree
+    unsigned int m_num_nodes {0};        //!< Number of nodes
+    unsigned int m_node_capacity {0};    //!< Capacity of the nodes array
+    unsigned int m_root {0};             //!< Index to the root node of the tree
     std::vector<unsigned int> m_mapping; //!< Reverse mapping to find node given a particle index
 
     //! Initialize the tree to hold N particles
@@ -262,7 +273,9 @@ inline void AABBTree::init(unsigned int N)
     m_mapping.resize(N);
 
     for (unsigned int i = 0; i < N; i++)
+    {
         m_mapping[i] = INVALID_NODE;
+    }
 }
 
 /*! \param hits Output vector of positive hits.
@@ -292,7 +305,9 @@ inline unsigned int AABBTree::query(std::vector<unsigned int>& hits, const AABB&
             if (current_node.left == INVALID_NODE)
             {
                 for (unsigned int i = 0; i < current_node.num_particles; i++)
+                {
                     hits.push_back(current_node.particles[i]);
+                }
             }
         }
         else
@@ -344,7 +359,9 @@ inline unsigned int AABBTree::height(unsigned int idx)
 
     // handle invalid nodes
     if (node_idx == INVALID_NODE)
+    {
         return 0;
+    }
 
     // follow the parent pointers up and count the steps
     unsigned int height = 1;
@@ -371,7 +388,9 @@ inline void AABBTree::buildTree(AABB* aabbs, unsigned int N)
 
     std::vector<unsigned int> idx;
     for (unsigned int i = 0; i < N; i++)
+    {
         idx.push_back(i);
+    }
 
     m_root = buildNode(aabbs, idx, 0, N, INVALID_NODE);
     updateSkip(m_root);
@@ -432,11 +451,11 @@ inline unsigned int AABBTree::buildNode(AABB* aabbs, std::vector<unsigned int>& 
     unsigned int start_right = len;
 
     // if there are only 2 aabbs, put one on each side
-    if (len == 2)
-    {
-        // nothing to do, already partitioned
-    }
-    else
+    // cppcheck knows that NODE_CAPACITY is defined as 16, so it sees this
+    // check as redundant. However, if we ever defined NODE_CAPACITY to be 1
+    // then this check would be meaningful, so it's safer to leave it.
+    // cppcheck-suppress knownConditionTrueFalse
+    if (len != 2)
     {
         // otherwise, we need to split them based on a heuristic. split the longest dimension in half
         if (my_radius.x > my_radius.y && my_radius.x > my_radius.z)
@@ -512,9 +531,13 @@ inline unsigned int AABBTree::buildNode(AABB* aabbs, std::vector<unsigned int>& 
 
     // sanity check. The left or right tree may have ended up empty. If so, just borrow one particle from it
     if (start_right == len)
+    {
         start_right = len - 1;
+    }
     if (start_right == 0)
+    {
         start_right = 1;
+    }
 
     // note: calling buildNode has side effects, the m_nodes array may be reallocated. So we need to determine
     // the left and right children, then build our node (can't say m_nodes[my_idx].left = buildNode(...))
@@ -544,19 +567,16 @@ inline unsigned int AABBTree::updateSkip(unsigned int idx)
     {
         return 1;
     }
-    else
-    {
-        // node idx needs to skip all the nodes underneath it (determined recursively)
-        unsigned int left_idx = m_nodes[idx].left;
-        unsigned int right_idx = m_nodes[idx].right;
+    // node idx needs to skip all the nodes underneath it (determined recursively)
+    unsigned int left_idx = m_nodes[idx].left;
+    unsigned int right_idx = m_nodes[idx].right;
 
-        unsigned int skip = updateSkip(left_idx) + updateSkip(right_idx);
-        m_nodes[idx].skip = skip;
-        return skip + 1;
-    }
+    unsigned int skip = updateSkip(left_idx) + updateSkip(right_idx);
+    m_nodes[idx].skip = skip;
+    return skip + 1;
 }
 
-/*! Allocates a new node in the tree
+/*! Allocates a new node in the tree and return its index.
  */
 inline unsigned int AABBTree::allocateNode()
 {
@@ -564,12 +584,15 @@ inline unsigned int AABBTree::allocateNode()
     if (m_num_nodes >= m_node_capacity)
     {
         // determine new capacity
-        AABBNode* m_new_nodes = NULL;
+        AABBNode* m_new_nodes = nullptr;
         unsigned int m_new_node_capacity = m_node_capacity * 2;
         if (m_new_node_capacity == 0)
+        {
             m_new_node_capacity = 16;
+        }
 
         // allocate new memory
+        // cppcheck-suppress AssignmentAddressToInteger
         int retval = posix_memalign((void**) &m_new_nodes, 32, m_new_node_capacity * sizeof(AABBNode));
         if (retval != 0)
         {
@@ -577,8 +600,10 @@ inline unsigned int AABBTree::allocateNode()
         }
 
         // if we have old memory, copy it over
-        if (m_nodes != NULL)
+        if (m_nodes != nullptr)
         {
+            // cppcheck doesn't recognize that posix_memalign allocates memory for m_new_nodes above.
+            // cppcheck-suppress nullPointer
             std::memcpy((void*) m_new_nodes, (void*) m_nodes, sizeof(AABBNode) * m_num_nodes);
             posix_memalign_free(m_nodes);
         }

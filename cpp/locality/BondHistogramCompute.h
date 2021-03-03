@@ -20,13 +20,10 @@ class BondHistogramCompute
 {
 public:
     //! Default constructor
-    BondHistogramCompute()
-        : m_box(box::Box()), m_frame_counter(0), m_n_points(0), m_n_query_points(0), m_reduce(true),
-          m_histogram(), m_local_histograms()
-    {}
+    BondHistogramCompute() : m_box(box::Box()), m_histogram(), m_local_histograms() {}
 
     //! Destructor
-    virtual ~BondHistogramCompute() {};
+    virtual ~BondHistogramCompute() = default;
 
     //! Reset the RDF array to all zeros
     virtual void reset()
@@ -48,7 +45,7 @@ public:
     //! Return thing_to_return after reducing if necessary.
     template<typename U> U& reduceAndReturn(U& thing_to_return)
     {
-        if (m_reduce == true)
+        if (m_reduce)
         {
             reduce();
         }
@@ -115,17 +112,17 @@ public:
 
 protected:
     box::Box m_box;
-    unsigned int m_frame_counter;  //!< Number of frames calculated.
-    unsigned int m_n_points;       //!< The number of points.
-    unsigned int m_n_query_points; //!< The number of query points.
-    bool m_reduce;                 //!< Whether or not the histogram needs to be reduced.
+    unsigned int m_frame_counter {0};  //!< Number of frames calculated.
+    unsigned int m_n_points {0};       //!< The number of points.
+    unsigned int m_n_query_points {0}; //!< The number of query points.
+    bool m_reduce {true};              //!< Whether or not the histogram needs to be reduced.
 
     util::Histogram<unsigned int> m_histogram; //!< Histogram of interparticle distances (bond lengths).
     util::Histogram<unsigned int>::ThreadLocalHistogram
         m_local_histograms; //!< Thread local bin counts for TBB parallelism
 
-    typedef util::Histogram<unsigned int> BondHistogram;
-    typedef typename BondHistogram::Axes BHAxes;
+    using BondHistogram = util::Histogram<unsigned int>;
+    using BHAxes = typename BondHistogram::Axes;
 };
 
 }; }; // namespace freud::locality

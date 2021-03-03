@@ -19,7 +19,7 @@
 namespace freud { namespace environment {
 
 // this is needed for conversion of the type of bond order calculation to be made in accumulate.
-typedef enum
+typedef enum // NOLINT(modernize-use-using)
 {
     bod = 0,
     lbod = 1,
@@ -37,14 +37,14 @@ public:
     BondOrder(unsigned int n_bins_theta, unsigned int n_bins_phi, BondOrderMode mode);
 
     //! Destructor
-    ~BondOrder() {}
+    ~BondOrder() override = default;
 
     //! Accumulate the bond order
     void accumulate(const locality::NeighborQuery* neighbor_query, quat<float>* orientations,
                     vec3<float>* query_points, quat<float>* query_orientations, unsigned int n_query_points,
                     const freud::locality::NeighborList* nlist, freud::locality::QueryArgs qargs);
 
-    virtual void reduce();
+    void reduce() override;
 
     //! Get a reference to the last computed bond order
     const util::ManagedArray<float>& getBondOrder();

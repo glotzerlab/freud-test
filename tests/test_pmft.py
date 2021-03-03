@@ -138,7 +138,7 @@ class TestPMFT:
             npt.assert_allclose(pmft.bin_counts, correct_bin_counts,
                                 atol=absoluteTolerance)
 
-            # Test with angles
+            # Test with angles.
             pmft.compute(nq, rowan.geometry.angle(orientations),
                          neighbors=neighbors)
             npt.assert_allclose(pmft.bin_counts, correct_bin_counts,
@@ -648,17 +648,18 @@ class TestPMFTXYZ(TestPMFT, unittest.TestCase):
             npt.assert_allclose(pmft.bin_counts, correct_bin_counts,
                                 atol=absoluteTolerance)
 
+            # Test with resetting.
             pmft.compute(nq, orientations, neighbors=neighbors)
             npt.assert_allclose(pmft.bin_counts, correct_bin_counts,
                                 atol=absoluteTolerance)
+            orig_pmft = pmft.pmft
 
-            pmft.compute(nq, orientations, neighbors=neighbors)
-            npt.assert_allclose(pmft.bin_counts, correct_bin_counts,
+            # Test with equivalent orientations.
+            pmft.compute(nq, orientations, neighbors=neighbors,
+                         equiv_orientations=[[1, 0, 0, 0]]*2)
+            npt.assert_allclose(pmft.bin_counts, 2*correct_bin_counts,
                                 atol=absoluteTolerance)
-
-            # Test without face orientations.
-            pmft.compute(nq, orientations, neighbors=neighbors)
-            npt.assert_allclose(pmft.bin_counts, correct_bin_counts,
+            npt.assert_allclose(pmft.pmft, orig_pmft,
                                 atol=absoluteTolerance)
 
     def test_shift_two_particles_dead_pixel(self):

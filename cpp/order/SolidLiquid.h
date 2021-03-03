@@ -5,6 +5,7 @@
 #define SOLID_LIQUID_H
 
 #include <complex>
+#include <iterator>
 #include <vector>
 
 #include "Cluster.h"
@@ -96,12 +97,11 @@ public:
     //! Returns a vector containing the size of all clusters.
     std::vector<unsigned int> getClusterSizes() const
     {
-        std::vector<unsigned int> sizes;
         auto keys = m_cluster.getClusterKeys();
-        for (auto cluster = keys.begin(); cluster != keys.end(); cluster++)
-        {
-            sizes.push_back(cluster->size());
-        }
+        std::vector<unsigned int> sizes;
+        sizes.reserve(keys.size());
+        std::transform(keys.begin(), keys.end(), std::back_inserter(sizes),
+                       [](auto& key) { return key.size(); });
         return sizes;
     }
 

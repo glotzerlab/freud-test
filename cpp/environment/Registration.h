@@ -26,7 +26,7 @@
 
 namespace freud { namespace environment {
 
-typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> matrix;
+using matrix = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>;
 
 inline matrix makeEigenMatrix(const std::vector<vec3<float>>& vecs)
 {
@@ -77,7 +77,9 @@ inline matrix CenterOfMass(const matrix& P)
     // p.size = (N rows, 3 cols)
     matrix cm(1, P.cols());
     for (int i = 0; i < P.cols(); i++)
+    {
         cm(0, i) = P.col(i).sum() / double(P.rows());
+    }
 
     return cm;
 }
@@ -86,7 +88,9 @@ inline matrix Translate(const matrix& vec, const matrix& P)
 {
     matrix trans = matrix::Zero(P.rows(), P.cols());
     for (int i = 0; i < P.rows(); i++)
+    {
         trans.row(i) = P.row(i) + vec;
+    }
     return trans;
 }
 
@@ -101,10 +105,8 @@ inline matrix Rotate(const matrix& R, const matrix& P)
             << " rows. These must be equal to perform the rotation." << std::endl;
         throw std::invalid_argument(msg.str());
     }
-    matrix rotated = matrix::Zero(P.rows(), P.cols());
     // Apply the rotation R.
-    rotated = R * P;
-    return rotated;
+    return R * P;
 }
 
 // some helpful references:
@@ -132,7 +134,7 @@ inline void KabschAlgorithm(const matrix& P, const matrix& Q, matrix& Rotation)
     Rotation = V * U.transpose();
 }
 
-inline void AlignVectorSets(matrix& P, matrix& Q, matrix* pRotation = NULL)
+inline void AlignVectorSets(matrix& P, matrix& Q, matrix* pRotation = nullptr)
 {
     // Aligns p with q.
     // both p and q will be changed in this operation.
@@ -148,30 +150,30 @@ inline void AlignVectorSets(matrix& P, matrix& Q, matrix* pRotation = NULL)
     // back to its original dimensionality.
     P = (rotation * P.transpose()).transpose(); // Apply the transformation.
 
-    if (pRotation) // optionally copy the rotation.
+    if (pRotation != nullptr) // optionally copy the rotation.
+    {
         *pRotation = rotation;
+    }
 }
 
 class RegisterBruteForce
 {
 public:
-    RegisterBruteForce(std::vector<vec3<float>> vecs) : m_rmsd(0.0), m_tol(1e-6), m_shuffles(1)
-    {
-        // make the Eigen matrix from vecs
-        m_ref_points = makeEigenMatrix(vecs);
-    }
+    explicit RegisterBruteForce(std::vector<vec3<float>>& vecs) : m_ref_points(makeEigenMatrix(vecs)) {};
 
-    ~RegisterBruteForce() {}
+    ~RegisterBruteForce() = default;
 
     void Fit(std::vector<vec3<float>>& pts)
     {
         matrix points;
-        matrix p, q, r;
+        matrix p;
+        matrix q;
+        matrix r;
         // make the Eigen matrix from pts
         points = makeEigenMatrix(pts);
         int num_pts;
 
-        unsigned int N = points.rows();
+        int N = points.rows();
         if (N != m_ref_points.rows())
         {
             std::ostringstream msg;
@@ -185,7 +187,9 @@ public:
         double rmsd_min = -1.0;
         for (size_t shuffles = 0; shuffles < m_shuffles; shuffles++)
         {
-            int p0 = 0, p1 = 0, p2 = 0;
+            int p0 = 0;
+            int p1 = 0;
+            int p2 = 0;
             while (p0 == p1 || p0 == p2 || p1 == p2)
             {
                 p0 = rng.random_int(0, N - 1);
@@ -208,7 +212,10 @@ public:
                 }
             }
 
-            size_t comb[3] = {0, 1, 2};
+            // We should switch this to using something other than C-style
+            // arrays, but we need to be careful to preserve the right behavior
+            // (particularly wrt NextCombination).
+            size_t comb[3] = {0, 1, 2}; // NOLINT(modernize-avoid-c-arrays)
             if (N == 2)
             {
                 num_pts = 2;
@@ -265,7 +272,7 @@ public:
                     // feed back in the TRANSPOSE of rot_points such that
                     // the input matrix is (Nx3).
                     BiMap<unsigned int, unsigned int> vec_map;
-                    double rmsd = AlignedRMSDTree(rot_points.transpose(), vec_map);
+                    float rmsd = AlignedRMSDTree(rot_points.transpose(), vec_map);
                     if (rmsd < rmsd_min || rmsd_min < 0.0)
                     {
                         m_rmsd = rmsd;
@@ -292,7 +299,6 @@ public:
         // Then we have to take the transpose again to get our matrix
         // back to its original dimensionality.
         pts = makeVec3Matrix(ptsT.transpose());
-        return;
     }
 
     std::vector<vec3<float>> getRotation()
@@ -307,7 +313,7 @@ public:
         return makeVec3Matrix(T);
     }
 
-    double getRMSD()
+    float getRMSD() const
     {
         return m_rmsd;
     }
@@ -335,10 +341,10 @@ public:
     // set, the vector set used in the argument below.
     // To fully solve this, we need to use the Hungarian algorithm or some
     // other way of solving the so-called assignment problem.
-    double AlignedRMSDTree(const matrix& points, BiMap<unsigned int, unsigned int>& m)
+    float AlignedRMSDTree(const matrix& points, BiMap<unsigned int, unsigned int>& m)
     {
         // Also brute force.
-        double rmsd = 0.0;
+        float rmsd = 0.0;
 
         // a mapping between the vectors of m_ref_points and the vectors of points
         BiMap<unsigned int, unsigned int> vec_map;
@@ -357,13 +363,13 @@ public:
             // get the rotated point
             vec3<float> pfit = make_point(points.row(r));
             // compute squared distances to all unused reference points
-            std::vector<std::pair<unsigned int, double>> ref_distances;
+            std::vector<std::pair<unsigned int, float>> ref_distances;
             for (auto ref_index : unused_indices)
             {
                 vec3<float> ref_point = make_point(m_ref_points.row(ref_index));
                 vec3<float> delta = ref_point - pfit;
-                double r_sq = dot(delta, delta);
-                ref_distances.push_back(std::pair<unsigned int, double>(ref_index, r_sq));
+                float r_sq = dot(delta, delta);
+                ref_distances.emplace_back(ref_index, r_sq);
             }
             // sort the ref_distances from nearest to farthest
             sort(ref_distances.begin(), ref_distances.end(), compare_ref_distances);
@@ -376,18 +382,21 @@ public:
         }
 
         m = vec_map;
-        return std::sqrt(rmsd / double(points.rows()));
+        return std::sqrt(rmsd / static_cast<float>(points.rows()));
     }
 
 private:
-    vec3<float> make_point(const Eigen::VectorXd& row)
+    static vec3<float> make_point(const Eigen::VectorXd& row)
     {
         if (row.rows() == 2)
+        {
             return vec3<float>(row[0], row[1], 0.0);
-        else if (row.rows() == 3)
+        }
+        if (row.rows() == 3)
+        {
             return vec3<float>(row[0], row[1], row[2]);
-        else
-            throw(std::runtime_error("points must 2 or 3 dimensions"));
+        }
+        throw(std::runtime_error("points must 2 or 3 dimensions"));
     }
 
     static bool compare_ref_distances(const std::pair<unsigned int, float>& a,
@@ -396,17 +405,19 @@ private:
         return (a.second < b.second);
     }
 
-    inline bool NextCombination(size_t* comb, int N, int k)
+    static inline bool NextCombination(size_t* comb, int N, int k)
     {
         // returns next combination.
-        if (k == 0 || N == 0 || !comb)
+        if (k == 0 || N == 0 || (comb == nullptr))
+        {
             return false;
+        }
 
         bool bRetVal = false;
 
         for (int i = k - 1; i >= 0; i--)
         {
-            if (comb[i] + 1 < size_t(N + i - k + 1))
+            if (comb[i] + 1 < (N + i - k + 1))
             {
                 comb[i]++;
                 for (int j = i + 1; j < k; j++)
@@ -424,7 +435,7 @@ private:
     template<class RNG> class RandomNumber
     {
     public:
-        RandomNumber()
+        RandomNumber() // NOLINT(cert-msc32-c,cert-msc51-cpp)
         {
             seed_generator();
         }
@@ -442,7 +453,9 @@ private:
             {
                 std::random_device rd;
                 for (size_t i = 0; i < n; i++)
+                {
                     seeds.push_back(rd());
+                }
             }
             catch (...)
             {
@@ -456,14 +469,16 @@ private:
         RNG m_generator;
     };
 
-private:
     matrix m_ref_points;
     matrix m_rotation;
     matrix m_translation;
-    double m_rmsd;
-    double m_tol;
-    size_t m_shuffles;
-    BiMap<unsigned int, unsigned int> m_vec_map;
+    float m_rmsd {0.0};
+    double m_tol {1e-6};
+    size_t m_shuffles {1};
+    BiMap<unsigned int, unsigned int>
+        m_vec_map; //! The mapping between indices of the two sets of points ref_points->points (where
+                   //! "ref_points" are those that RegisterBruteForce was constructed with and "points" are
+                   //! those passed to Fit).
 };
 
 }; }; // end namespace freud::environment

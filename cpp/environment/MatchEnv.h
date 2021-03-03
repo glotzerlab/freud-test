@@ -27,34 +27,33 @@ namespace freud { namespace environment {
 struct Environment
 {
     //! Constructor.
-    Environment(bool ghost = false) : env_ind(0), vecs(0), ghost(ghost), num_vecs(0), vec_ind(0), proper_rot()
-    {}
+    Environment(bool ghost = false) : ghost(ghost) {}
 
     //! Add a vector to define the local environment
-    void addVec(vec3<float> vec)
+    void addVec(const vec3<float>& vec)
     {
         vecs.push_back(vec);
         vec_ind.push_back(num_vecs);
         num_vecs++;
     }
 
-    unsigned int env_ind;          //!< The index of the environment
+    unsigned int env_ind {0};      //!< The index of the environment
     std::vector<vec3<float>> vecs; //!< The vectors that define the environment
     //! Is this environment a ghost? Do we ignore it when we compute actual
     //  physical quantities associated with all environments?
     bool ghost;
-    unsigned int num_vecs; //!< The number of vectors defining the environment currently
+    unsigned int num_vecs {0}; //!< The number of vectors currently defining the environment
     //! The order that the vectors must be in to define the environment
     std::vector<unsigned int> vec_ind;
     //! The rotation that defines the proper orientation of the environment
-    rotmat3<float> proper_rot;
+    rotmat3<float> proper_rot {};
 };
 
 //! General disjoint set class, taken mostly from Cluster.h
 struct EnvDisjointSet
 {
     //! Constructor (taken partially from Cluster.cc).
-    EnvDisjointSet(unsigned int Np);
+    explicit EnvDisjointSet(unsigned int Np);
     //! Merge two sets
     /*! Merge the two sets that elements a and b belong to. Taken partially
      * from Cluster.cc. The vec_map must be a bimap of PROPERLY ORDERED vector
@@ -63,7 +62,7 @@ struct EnvDisjointSet
      * and rotate them to match the set of PROPERLY ROTATED vectors a
      */
     void merge(const unsigned int a, const unsigned int b, BiMap<unsigned int, unsigned int> vec_map,
-               rotmat3<float> rotation);
+               rotmat3<float>& rotation);
 
     //! Find the set with a given element (taken mostly from Cluster.cc).
     unsigned int find(const unsigned int c);
@@ -206,8 +205,9 @@ public:
 
     //! Construct and return a local environment surrounding the particle indexed by i. Set the environment
     //! index to env_ind.
-    Environment buildEnv(const freud::locality::NeighborQuery* nq, const freud::locality::NeighborList* nlist,
-                         size_t num_bonds, size_t& bond, unsigned int i, unsigned int env_ind);
+    static Environment buildEnv(const freud::locality::NeighborQuery* nq,
+                                const freud::locality::NeighborList* nlist, size_t num_bonds, size_t& bond,
+                                unsigned int i, unsigned int env_ind);
 
     //! Returns the entire Np by m_num_neighbors by 3 matrix of all environments for all particles
     const util::ManagedArray<vec3<float>>& getPointEnvironments()
@@ -285,7 +285,7 @@ public:
         return m_cluster_environments;
     }
 
-    unsigned int getNumClusters()
+    unsigned int getNumClusters() const
     {
         return m_num_clusters;
     }
@@ -309,7 +309,7 @@ private:
      */
     unsigned int populateEnv(EnvDisjointSet dj);
 
-    unsigned int m_num_clusters;                  //!< Last number of local environments computed
+    unsigned int m_num_clusters {0};              //!< Last number of local environments computed
     util::ManagedArray<unsigned int> m_env_index; //!< Cluster index determined for each particle
     std::vector<std::vector<vec3<float>>>
         m_cluster_environments; //!< Dictionary of (cluster id, vectors) pairs

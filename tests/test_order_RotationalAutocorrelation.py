@@ -103,10 +103,10 @@ def hypersphere_harmonic(angle_array, l, m1, m2):
     if (l-a) >= 0 and (l-b) >= 0 and a >= 0 and b >= 0:
         for k in np.arange(0, 4*l+1):
             if (b-k >= 0) and (a-k >= 0) and (l + k - a - b >= 0):
-                denom = (math.factorial(k) *
-                         math.factorial(l+k-a-b) *
-                         math.factorial(a-k) *
-                         math.factorial(b-k))
+                denom = (math.factorial(int(k)) *
+                         math.factorial(int(l+k-a-b)) *
+                         math.factorial(int(a-k)) *
+                         math.factorial(int(b-k)))
 
                 for xi, zeta in angle_array:
                     val += (
@@ -116,10 +116,10 @@ def hypersphere_harmonic(angle_array, l, m1, m2):
                         (-xi)**(l+k-a-b)) / denom
 
         val *= np.sqrt(
-            (math.factorial(a) *
-             math.factorial(l-a) *
-             math.factorial(b) *
-             math.factorial(l-b)) / (l+1))
+            (math.factorial(int(a)) *
+             math.factorial(int(l-a)) *
+             math.factorial(int(b)) *
+             math.factorial(int(l-b))) / (l+1))
 
     return val/len(angle_array)
 

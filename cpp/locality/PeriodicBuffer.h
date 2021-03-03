@@ -20,7 +20,7 @@ class PeriodicBuffer
 {
 public:
     //! Constructor
-    PeriodicBuffer() {}
+    PeriodicBuffer() = default;
 
     //! Get the simulation box
     const freud::box::Box& getBox() const
@@ -35,7 +35,7 @@ public:
     }
 
     //! Compute the periodic buffer
-    void compute(const freud::locality::NeighborQuery* neighbor_query, const vec3<float> buff,
+    void compute(const freud::locality::NeighborQuery* neighbor_query, const vec3<float>& buff,
                  const bool use_images);
 
     //! Return the buffer points

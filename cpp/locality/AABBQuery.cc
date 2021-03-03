@@ -18,27 +18,24 @@ AABBQuery::AABBQuery(const box::Box& box, const vec3<float>* points, unsigned in
     buildTree(m_points, m_n_points);
 }
 
-AABBQuery::~AABBQuery() {}
+AABBQuery::~AABBQuery() = default;
 
 std::shared_ptr<NeighborQueryPerPointIterator>
 AABBQuery::querySingle(const vec3<float> query_point, unsigned int query_point_idx, QueryArgs args) const
 {
     this->validateQueryArgs(args);
-    if (args.mode == QueryArgs::ball)
+    if (args.mode == QueryType::ball)
     {
         return std::make_shared<AABBQueryBallIterator>(this, query_point, query_point_idx, args.r_max,
                                                        args.r_min, args.exclude_ii);
     }
-    else if (args.mode == QueryArgs::nearest)
+    if (args.mode == QueryType::nearest)
     {
         return std::make_shared<AABBQueryIterator>(this, query_point, query_point_idx, args.num_neighbors,
                                                    args.r_guess, args.r_max, args.r_min, args.scale,
                                                    args.exclude_ii);
     }
-    else
-    {
-        throw std::runtime_error("Invalid query mode provided to query function in AABBQuery.");
-    }
+    throw std::runtime_error("Invalid query mode provided to query function in AABBQuery.");
 }
 
 void AABBQuery::setupTree(unsigned int Np)
@@ -54,7 +51,9 @@ void AABBQuery::buildTree(const vec3<float>* points, unsigned int Np)
         // Make a point AABB
         vec3<float> my_pos(points[i]);
         if (m_box.is2D())
+        {
             my_pos.z = 0;
+        }
         m_aabbs[i] = AABB(my_pos, i);
     }
 
@@ -79,7 +78,9 @@ void AABBIterator::updateImageVectors(float r_max, bool _check_r_max)
 
     // Now compute the image vectors
     // Each dimension increases by one power of 3
-    unsigned int n_dim_periodic = (unsigned int) (periodic.x + periodic.y + (!box.is2D()) * periodic.z);
+    unsigned int n_dim_periodic = static_cast<unsigned int>(periodic.x)
+        + static_cast<unsigned int>(periodic.y)
+        + static_cast<unsigned int>(!box.is2D()) * static_cast<unsigned int>(periodic.z);
     m_n_images = 1;
     for (unsigned int dim = 0; dim < n_dim_periodic; ++dim)
     {
@@ -114,12 +115,11 @@ void AABBIterator::updateImageVectors(float r_max, bool _check_r_max)
                 if (!(i == 0 && j == 0 && k == 0))
                 {
                     // Skip any periodic images if we don't have periodicity
-                    if (i != 0 && !periodic.x)
+                    if ((i != 0 && !periodic.x) || (j != 0 && !periodic.y)
+                        || (k != 0 && (box.is2D() || !periodic.z)))
+                    {
                         continue;
-                    if (j != 0 && !periodic.y)
-                        continue;
-                    if (k != 0 && (box.is2D() || !periodic.z))
-                        continue;
+                    }
 
                     m_image_list[n_images] = float(i) * latt_a + float(j) * latt_b + float(k) * latt_c;
                     ++n_images;
@@ -201,7 +201,7 @@ NeighborBond AABBQueryBallIterator::next()
     } // end loop over images
 
     m_finished = true;
-    return NeighborQueryIterator::ITERATOR_TERMINATOR;
+    return ITERATOR_TERMINATOR;
 }
 
 NeighborBond AABBQueryIterator::next()
@@ -219,7 +219,7 @@ NeighborBond AABBQueryIterator::next()
     // neighbors and sort them to find the actual ones, it computes and caches
     // them and then returns them one-by-one. This check ensures that we only
     // search for new neighbors the first time next is called.
-    if (!m_current_neighbors.size())
+    if (m_current_neighbors.empty())
     {
         // Continually perform ball queries until the termination conditions are met.
         while (true)
@@ -238,8 +238,10 @@ NeighborBond AABBQueryIterator::next()
             while (!ball_it->end())
             {
                 NeighborBond nb = ball_it->next();
-                if (nb == NeighborQueryIterator::ITERATOR_TERMINATOR)
+                if (nb == ITERATOR_TERMINATOR)
+                {
                     continue;
+                }
 
                 if (!m_exclude_ii || m_query_point_idx != nb.point_idx)
                 {
@@ -248,7 +250,7 @@ NeighborBond AABBQueryIterator::next()
                     // distance, use the map instead of the vector.
                     if (m_search_extended)
                     {
-                        if (!m_all_distances.count(nb.point_idx)
+                        if ((m_all_distances.count(nb.point_idx) == 0)
                             || m_all_distances[nb.point_idx] > nb.distance)
                         {
                             m_all_distances[nb.point_idx] = nb.distance;
@@ -261,7 +263,9 @@ NeighborBond AABBQueryIterator::next()
                     else
                     {
                         if (nb.distance >= m_r_min)
+                        {
                             m_current_neighbors.emplace_back(nb);
+                        }
                     }
                 }
             }
@@ -275,25 +279,27 @@ NeighborBond AABBQueryIterator::next()
                 std::sort(m_current_neighbors.begin(), m_current_neighbors.end());
                 break;
             }
-            else if ((m_r_cur >= m_r_max) || (m_r_cur >= max_plane_distance)
-                     || ((m_all_distances.size() - m_query_points_below_r_min.size()) >= m_num_neighbors))
+
+            if ((m_r_cur >= m_r_max) || (m_r_cur >= max_plane_distance)
+                || ((m_all_distances.size() - m_query_points_below_r_min.size()) >= m_num_neighbors))
             {
                 // Once this condition is reached, either we found enough
                 // neighbors beyond the normal min_plane_distance
                 // condition or we conclude that there are not enough
                 // neighbors left in the system.
-                for (std::map<unsigned int, float>::const_iterator it(m_all_distances.begin());
-                     it != m_all_distances.end(); it++)
+                for (const auto& bond_distance : m_all_distances)
                 {
-                    if (it->second >= m_r_min)
+                    if (bond_distance.second >= m_r_min)
                     {
-                        m_current_neighbors.emplace_back(m_query_point_idx, it->first, it->second);
+                        m_current_neighbors.emplace_back(m_query_point_idx, bond_distance.first,
+                                                         bond_distance.second);
                     }
                 }
                 std::sort(m_current_neighbors.begin(), m_current_neighbors.end());
                 break;
             }
-            else if (m_r_cur > min_plane_distance / 2)
+
+            if (m_r_cur > min_plane_distance / 2)
             {
                 // If we have to go beyond the cutoff radius, we need to
                 // start tracking what particles are already in the set so
@@ -317,13 +323,13 @@ NeighborBond AABBQueryIterator::next()
         if (m_current_neighbors[m_count - 1].distance > m_r_max)
         {
             m_finished = true;
-            return NeighborQueryIterator::ITERATOR_TERMINATOR;
+            return ITERATOR_TERMINATOR;
         }
         return m_current_neighbors[m_count - 1];
     }
 
     m_finished = true;
-    return NeighborQueryIterator::ITERATOR_TERMINATOR;
+    return ITERATOR_TERMINATOR;
 }
 
 }; }; // end namespace freud::locality

@@ -35,13 +35,16 @@ cd ${BUILD_DIR}
 source tbbvars.sh
 cd ~/
 
-# Build wheels for Python 3.5, 3.6, 3.7, 3.8
-PYBINS="/opt/python/cp3[5-8]*/bin"
+# Build wheels for Python 3.6, 3.7, 3.8, 3.9
+PYBINS="/opt/python/cp3[6-9]*/bin"
 
 for PYBIN in $PYBINS; do
   echo "Building for $(${PYBIN}/python --version)"
 
-  "${PYBIN}/python" -m pip install cython --no-deps --ignore-installed -q --progress-bar=off
+  # Need to export the current bin path so that scikit-build can find the pip
+  # installed cmake binary.
+  export PATH=${PYBIN}:${PATH}
+  "${PYBIN}/python" -m pip install cython scikit-build cmake --ignore-installed -q --progress-bar=off
   rm -rf numpy-1.14.6
   curl -sSLO https://github.com/numpy/numpy/archive/v1.14.6.tar.gz
   tar -xzf v1.14.6.tar.gz
@@ -62,7 +65,7 @@ for PYBIN in $PYBINS; do
   echo "Testing for $(${PYBIN}/python --version)"
 
   "${PYBIN}/python" -m pip install freud_analysis --no-deps --no-index -f ~/ci/freud/wheelhouse
-  "${PYBIN}/python" -m pip install -U -r ~/ci/freud/requirements-testing.txt
+  "${PYBIN}/python" -m pip install -U -r ~/ci/freud/requirements-testing.txt --progress-bar=off
   cd ~/ci/freud/tests
   "${PYBIN}/python" -m unittest discover . -v
 done

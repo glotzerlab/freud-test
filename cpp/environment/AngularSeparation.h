@@ -25,10 +25,10 @@ class AngularSeparationGlobal
 {
 public:
     //! Constructor
-    AngularSeparationGlobal() {}
+    AngularSeparationGlobal() = default;
 
     //! Destructor
-    ~AngularSeparationGlobal() {}
+    ~AngularSeparationGlobal() = default;
 
     //! Compute the angular separation with respect to global orientation
     void compute(const quat<float>* global_orientations, unsigned int n_global,
@@ -54,10 +54,10 @@ class AngularSeparationNeighbor
 {
 public:
     //! Constructor
-    AngularSeparationNeighbor() {}
+    AngularSeparationNeighbor() = default;
 
     //! Destructor
-    ~AngularSeparationNeighbor() {}
+    ~AngularSeparationNeighbor() = default;
 
     //! Compute the angular separation between neighbors
     void compute(const locality::NeighborQuery* nq, const quat<float>* orientations,

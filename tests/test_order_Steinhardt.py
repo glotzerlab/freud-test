@@ -307,6 +307,16 @@ class TestSteinhardt(unittest.TestCase):
 
         st._repr_png_()
 
+    def test_no_neighbors(self):
+        """Ensure that particles without neighbors are assigned NaN."""
+        box = freud.box.Box.cube(10)
+        positions = [(0, 0, 0)]
+        comp = freud.order.Steinhardt(6)
+        comp.compute((box, positions), neighbors={'r_max': 1.25})
+
+        assert np.all(np.isnan(comp.particle_order))
+        npt.assert_allclose(np.nan_to_num(comp.particle_order), 0)
+
 
 if __name__ == '__main__':
     unittest.main()

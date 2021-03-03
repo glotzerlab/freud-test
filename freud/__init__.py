@@ -5,6 +5,7 @@ from . import box
 from . import cluster
 from . import data
 from . import density
+from . import diffraction
 from . import environment
 from . import interface
 from . import locality
@@ -21,7 +22,7 @@ from .parallel import get_num_threads, set_num_threads, NumThreads
 # automatic selection runs, the user cannot change it.
 set_num_threads(0)
 
-__version__ = '2.2.0'
+__version__ = '2.4.1'
 
 __all__ = [
     '__version__',
@@ -29,6 +30,7 @@ __all__ = [
     'cluster',
     'data',
     'density',
+    'diffraction',
     'environment',
     'interface',
     'locality',

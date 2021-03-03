@@ -27,8 +27,9 @@ void LocalDescriptors::compute(const locality::NeighborQuery* nq, const vec3<flo
     m_nlist = locality::makeDefaultNlist(nq, nlist, query_points, n_query_points, qargs);
 
     if (max_num_neighbors == 0)
+    {
         max_num_neighbors = std::numeric_limits<unsigned int>::max();
-
+    }
     m_sphArray.prepare({m_nlist.getNumBonds(), getSphWidth()});
 
     util::forLoopWrapper(0, nq->getNPoints(), [=](size_t begin, size_t end) {
@@ -39,7 +40,9 @@ void LocalDescriptors::compute(const locality::NeighborQuery* nq, const vec3<flo
             size_t bond(m_nlist.find_first_index(i));
             unsigned int neighbor_count(0);
 
-            vec3<float> rotation_0, rotation_1, rotation_2;
+            vec3<float> rotation_0;
+            vec3<float> rotation_1;
+            vec3<float> rotation_2;
 
             if (m_orientation == LocalNeighborhood)
             {
@@ -120,7 +123,9 @@ void LocalDescriptors::compute(const locality::NeighborQuery* nq, const vec3<flo
                 // catch cases where bond_ij.z/magR falls outside [-1, 1]
                 // due to numerical issues
                 if (std::isnan(phi))
+                {
                     phi = bond_ij.z > 0 ? 0 : M_PI;
+                }
 
                 sph_eval.compute(phi, theta);
 

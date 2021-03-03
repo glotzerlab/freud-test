@@ -187,8 +187,17 @@ cdef class GaussianDensity(_Compute):
 
     Replaces particle positions with a Gaussian blur and calculates the
     contribution from each to the proscribed grid based upon the distance of
-    the grid cell from the center of the Gaussian. The resulting data is a
-    regular grid of particle densities that can be used in standard algorithms
+    the grid cell from the center of the Gaussian. The weights for the
+    Gaussians could be additionally specified in the compute method. The
+    convolution of the weights with the Gaussians is calculated in this case:
+
+    .. math::
+
+        p(\vec{r}) = \sum_i \frac{1}{2\pi \sigma^2}
+        \exp \left(-\frac{(\vec{r}-\vec{r}_i)^2}{2\sigma^2}\right) p_i
+
+    The resulting data is a regular grid of particle densities or
+    convolved parameter that can be used in standard algorithms
     requiring evenly spaced point, such as Fast Fourier Transforms. The
     dimensions of the grid are set in the constructor, and can either be set
     equally for all dimensions or for each dimension independently.
@@ -228,17 +237,31 @@ cdef class GaussianDensity(_Compute):
         """:class:`freud.box.Box`: Box used in the calculation."""
         return freud.box.BoxFromCPP(self.thisptr.getBox())
 
-    def compute(self, system):
+    def compute(self, system, values=None):
         R"""Calculates the Gaussian blur for the specified points.
 
         Args:
             system:
                 Any object that is a valid argument to
                 :class:`freud.locality.NeighborQuery.from_system`.
+            values ((:math:`N_{points}`) :class:`numpy.ndarray`):
+                Values associated with the system points used to calculate the
+                convolution. Calculates Gaussian blur (equivalent to providing
+                a value of 1 for every point) if :code:`None`. (Default value
+                = :code:`None`).
         """
         cdef freud.locality.NeighborQuery nq = \
             freud.locality.NeighborQuery.from_system(system)
-        self.thisptr.compute(nq.get_ptr())
+
+        cdef float* l_values_ptr = NULL
+        cdef float[::1] l_values
+        if values is not None:
+            l_values = freud.util._convert_array(
+                values, shape=(nq.points.shape[0], ))
+            l_values_ptr = &l_values[0]
+
+        self.thisptr.compute(nq.get_ptr(),
+                             l_values_ptr)
         return self
 
     @_Compute._computed_property
@@ -469,6 +492,7 @@ cdef class LocalDensity(_PairCompute):
         R"""Calculates the local density for the specified points.
 
         Example::
+
             >>> import freud
             >>> box, points = freud.data.make_random_system(10, 100, seed=0)
             >>> # Compute Local Density
@@ -543,9 +567,9 @@ cdef class RDF(_SpatialHistogram1D):
     Note that the RDF is defined strictly according to the pair correlation
     function, i.e.
 
-     .. math::
+    .. math::
 
-         g(r) = V\frac{N-1}{N} \langle \delta(r) \rangle
+        g(r) = V\frac{N-1}{N} \langle \delta(r) \rangle
 
     In the thermodynamic limit, the fraction tends to unity and the limiting
     behavior of :math:`\lim_{r \to \infty} g(r)=1` is recovered. However, for

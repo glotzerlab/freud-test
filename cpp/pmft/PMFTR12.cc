@@ -15,13 +15,21 @@ namespace freud { namespace pmft {
 PMFTR12::PMFTR12(float r_max, unsigned int n_r, unsigned int n_t1, unsigned int n_t2) : PMFT()
 {
     if (n_r < 1)
+    {
         throw std::invalid_argument("PMFTR12 requires at least 1 bin in R.");
+    }
     if (n_t1 < 1)
+    {
         throw std::invalid_argument("PMFTR12 requires at least 1 bin in T1.");
+    }
     if (n_t2 < 1)
+    {
         throw std::invalid_argument("PMFTR12 requires at least 1 bin in T2.");
-    if (r_max < 0.0f)
+    }
+    if (r_max < 0)
+    {
         throw std::invalid_argument("PMFTR12 requires that r_max must be positive.");
+    }
 
     // Construct the Histogram object that will be used to keep track of counts of bond distances found.
     BHAxes axes;
@@ -67,12 +75,13 @@ void PMFTR12::reduce()
     PMFT::reduce([this](size_t i) { return m_inv_jacobian_array[i]; });
 }
 
-void PMFTR12::accumulate(const locality::NeighborQuery* neighbor_query, float* orientations,
-                         vec3<float>* query_points, float* query_orientations, unsigned int n_p,
-                         const locality::NeighborList* nlist, freud::locality::QueryArgs qargs)
+void PMFTR12::accumulate(const locality::NeighborQuery* neighbor_query, const float* orientations,
+                         const vec3<float>* query_points, const float* query_orientations,
+                         unsigned int n_query_points, const locality::NeighborList* nlist,
+                         freud::locality::QueryArgs qargs)
 {
     neighbor_query->getBox().enforce2D();
-    accumulateGeneral(neighbor_query, query_points, n_p, nlist, qargs,
+    accumulateGeneral(neighbor_query, query_points, n_query_points, nlist, qargs,
                       [=](const freud::locality::NeighborBond& neighbor_bond) {
                           vec3<float> delta(bondVector(neighbor_bond, neighbor_query, query_points));
                           // calculate angles

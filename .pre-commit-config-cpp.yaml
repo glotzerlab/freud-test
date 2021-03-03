@@ -1,0 +1,46 @@
+# This file contains pre-commit hooks for checking the C++ code. Since these
+# hooks require tools that may not be trivial to install (unlike the Python
+# hooks like flake8), we keep these in a separate file to be applied manually.
+repos:
+-   repo: local
+    hooks:
+      - id: clang-format
+        name: clang-format
+        entry: clang-format
+        language: system
+        types: [c++]
+        # Exclude external files.
+        exclude: 'extern/.*'
+        # Unclear if --style=file is necessary, it seems like clang-format uses
+        # .clang-format if found by default, at least for newer versions. I'll
+        # specify this here just in case.
+        args:
+        - --style=file
+      - id: clang-tidy
+        name: clang-tidy
+        entry: clang-tidy
+        language: system
+        types: [c++]
+        # Exclude external files. Also exclude AABB.h because it uses
+        # intrinsics heavily and these are not considered portable.
+        exclude: 'cpp/locality/AABB\.h|extern/.*'
+        args:
+        - --warnings-as-errors=*
+      - id: cppcheck
+        # Ignore external files and those taken verbatim from HOOMD.
+        name: cppcheck
+        entry: cppcheck
+        language: system
+        types: [c++]
+        # Exclude external files. Also exclude AABB.h because it uses
+        # intrinsics heavily and these are not considered portable.
+        exclude: 'cpp/locality/AABB\.h|extern/.*'
+        args:
+        - cpp/
+        - --enable=warning,style,performance,portability # Ignore unused (could be used by Cython).
+        - --std=c++14
+        - --language=c++ # Force C++ for .h header files.
+        - --inline-suppr # Enable inline suppresions of warnings.
+        - --suppress=*:cpp/locality/AABB.h
+        - --suppress=*:extern/*
+        - --error-exitcode=1

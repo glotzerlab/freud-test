@@ -20,7 +20,7 @@ public:
     RDF(unsigned int bins, float r_max, float r_min = 0, bool normalize = false);
 
     //! Destructor
-    virtual ~RDF() {};
+    ~RDF() override = default;
 
     //! Compute the RDF
     /*! Accumulate the given points to the histogram. Accumulation is performed
@@ -32,7 +32,7 @@ public:
                     freud::locality::QueryArgs qargs);
 
     //! Reduce thread-local arrays onto the primary data arrays.
-    virtual void reduce();
+    void reduce() override;
 
     //! Get the positional correlation function.
     const util::ManagedArray<float>& getRDF()

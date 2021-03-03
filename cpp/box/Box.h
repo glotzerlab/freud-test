@@ -5,6 +5,7 @@
 #define BOX_H
 
 #include "utils.h"
+#include <algorithm>
 #include <complex>
 #include <sstream>
 #include <stdexcept>
@@ -50,7 +51,7 @@ public:
     }
 
     //! Construct a square/cubic box
-    Box(float L, bool _2d = false)
+    explicit Box(float L, bool _2d = false)
     {
         m_2d = _2d; // Assign before calling setL!
         setL(L, L, L);
@@ -93,7 +94,7 @@ public:
     }
 
     //! Set L, box lengths, inverses.  Box is also centered at zero.
-    void setL(const vec3<float> L)
+    void setL(const vec3<float>& L)
     {
         setL(L.x, L.y, L.z);
     }
@@ -112,7 +113,7 @@ public:
             m_Linv = vec3<float>(1 / m_L.x, 1 / m_L.y, 1 / m_L.z);
         }
 
-        m_hi = m_L / 2.0f;
+        m_hi = m_L / float(2.0);
         m_lo = -m_hi;
     }
 
@@ -200,9 +201,10 @@ public:
     float getVolume() const
     {
         if (m_2d)
+        {
             return m_L.x * m_L.y;
-        else
-            return m_L.x * m_L.y * m_L.z;
+        }
+        return m_L.x * m_L.y * m_L.z;
     }
 
     //! Convert fractional coordinates into absolute coordinates
@@ -217,7 +219,7 @@ public:
         v.y += m_yz * v.z;
         if (m_2d)
         {
-            v.z = 0.0f;
+            v.z = float(0.0);
         }
         return v;
     }
@@ -252,11 +254,11 @@ public:
         vec3<float> delta = v - m_lo;
         delta.x -= (m_xz - m_yz * m_xy) * v.z + m_xy * v.y;
         delta.y -= m_yz * v.z;
-        delta = (delta + ghost_width) / (m_L + 2.0f * ghost_width);
+        delta = (delta + ghost_width) / (m_L + float(2.0) * ghost_width);
 
         if (m_2d)
         {
-            delta.z = 0.0f;
+            delta.z = float(0.0);
         }
         return delta;
     }
@@ -271,20 +273,33 @@ public:
         });
     }
 
+    //! Get periodic image of a vector.
+    /*! \param v The vector to check.
+     *  \param image The image of a given point.
+     */
+    inline void getImage(const vec3<float>& v, vec3<int>& image) const
+    {
+        vec3<float> f = makeFractional(v) - vec3<float>(0.5, 0.5, 0.5);
+        if (m_2d)
+        {
+            f.z = float(0.0);
+        }
+        image.x = (int) ((f.x >= float(0.0)) ? f.x + float(0.5) : f.x - float(0.5));
+        image.y = (int) ((f.y >= float(0.0)) ? f.y + float(0.5) : f.y - float(0.5));
+        image.z = (int) ((f.z >= float(0.0)) ? f.z + float(0.5) : f.z - float(0.5));
+    }
+
     //! Get the periodic image vectors belongs to
     /*! \param vecs The vectors to check
      *  \param Nvecs Number of vectors
         \param res Array to save the images
      */
-    void getImage(vec3<float>* vecs, unsigned int Nvecs, vec3<int>* res) const
+    void getImages(vec3<float>* vecs, unsigned int Nvecs, vec3<int>* res) const
     {
         util::forLoopWrapper(0, Nvecs, [=](size_t begin, size_t end) {
             for (size_t i = begin; i < end; ++i)
             {
-                vec3<float> f = makeFractional(vecs[i]) - vec3<float>(0.5, 0.5, 0.5);
-                res[i].x = (int) ((f.x >= 0.0f) ? f.x + 0.5f : f.x - 0.5f);
-                res[i].y = (int) ((f.y >= 0.0f) ? f.y + 0.5f : f.y - 0.5f);
-                res[i].z = (int) ((f.z >= 0.0f) ? f.z + 0.5f : f.z - 0.5f);
+                getImage(vecs[i], res[i]);
             }
         });
     }
@@ -304,15 +319,15 @@ public:
         vec3<float> v_frac = makeFractional(v);
         if (m_periodic.x)
         {
-            v_frac.x = util::modulusPositive(v_frac.x, 1.0f);
+            v_frac.x = util::modulusPositive(v_frac.x, float(1.0));
         }
         if (m_periodic.y)
         {
-            v_frac.y = util::modulusPositive(v_frac.y, 1.0f);
+            v_frac.y = util::modulusPositive(v_frac.y, float(1.0));
         }
         if (m_periodic.z)
         {
-            v_frac.z = util::modulusPositive(v_frac.z, 1.0f);
+            v_frac.z = util::modulusPositive(v_frac.z, float(1.0));
         }
         return makeAbsolute(v_frac);
     }
@@ -357,7 +372,7 @@ public:
      *  \param masses Optional array of masses, of length Nvecs
      *  \return Center of mass as a vec3<float>
      */
-    vec3<float> centerOfMass(vec3<float>* vecs, size_t Nvecs, float* masses = NULL) const
+    vec3<float> centerOfMass(vec3<float>* vecs, size_t Nvecs, const float* masses = nullptr) const
     {
         // This roughly follows the implementation in
         // https://en.wikipedia.org/wiki/Center_of_mass#Systems_with_periodic_boundary_conditions
@@ -369,7 +384,7 @@ public:
             vec3<float> phase(constants::TWO_PI * makeFractional(vecs[i]));
             vec3<std::complex<float>> xi(std::polar(float(1.0), phase.x), std::polar(float(1.0), phase.y),
                                          std::polar(float(1.0), phase.z));
-            float mass = (masses != NULL) ? masses[i] : 1.0;
+            float mass = (masses != nullptr) ? masses[i] : float(1.0);
             total_mass += mass;
             xi_mean += std::complex<float>(mass, 0) * xi;
         }
@@ -384,7 +399,7 @@ public:
      *  \param Nvecs Number of vectors
      *  \param masses Optional array of masses, of length Nvecs
      */
-    void center(vec3<float>* vecs, unsigned int Nvecs, float* masses = NULL) const
+    void center(vec3<float>* vecs, unsigned int Nvecs, const float* masses = nullptr) const
     {
         vec3<float> com(centerOfMass(vecs, Nvecs, masses));
         util::forLoopWrapper(0, Nvecs, [=](size_t begin, size_t end) {
@@ -401,8 +416,8 @@ public:
     */
     inline float computeDistance(const vec3<float>& r_i, const vec3<float>& r_j) const
     {
-            const vec3<float> r_ij = wrap(r_j - r_i);
-            return std::sqrt(dot(r_ij, r_ij));
+        const vec3<float> r_ij = wrap(r_j - r_i);
+        return std::sqrt(dot(r_ij, r_ij));
     }
 
     //! Calculate distances between a set of query points and points.
@@ -410,10 +425,11 @@ public:
         \param n_query_points The number of query points.
         \param points Point positions.
         \param n_points The number of points.
-        \param distances Pointer to array of length n_query_points containing distances between each point and query_point (overwritten in place).
+        \param distances Pointer to array of length n_query_points containing distances between each point and
+       query_point (overwritten in place).
     */
     void computeDistances(const vec3<float>* query_points, const unsigned int n_query_points,
-        const vec3<float>* points, const unsigned int n_points, float *distances) const
+                          const vec3<float>* points, const unsigned int n_points, float* distances) const
     {
         if (n_query_points != n_points)
         {
@@ -432,22 +448,42 @@ public:
         \param n_query_points The number of query points.
         \param points Point positions.
         \param n_points The number of points.
-        \param distances Pointer to array of length n_query_points*n_points containing distances between points and query_points (overwritten in place).
+        \param distances Pointer to array of length n_query_points*n_points containing distances between
+       points and query_points (overwritten in place).
     */
     void computeAllDistances(const vec3<float>* query_points, const unsigned int n_query_points,
-        const vec3<float>* points, const unsigned int n_points, float* distances) const
+                             const vec3<float>* points, const unsigned int n_points, float* distances) const
     {
-        util::forLoopWrapper2D(0, n_query_points, 0, n_points, [&](
-            size_t begin_n, size_t end_n, size_t begin_m, size_t end_m) {
+        util::forLoopWrapper2D(
+            0, n_query_points, 0, n_points, [&](size_t begin_n, size_t end_n, size_t begin_m, size_t end_m) {
                 for (size_t i = begin_n; i < end_n; ++i)
                 {
                     for (size_t j = begin_m; j < end_m; ++j)
                     {
-                        distances[i*n_points + j] = computeDistance(query_points[i], points[j]);
+                        distances[i * n_points + j] = computeDistance(query_points[i], points[j]);
                     }
                 }
+            });
+    }
+
+    //! Get mask of points that fit inside the box.
+    /*! \param points Point positions.
+        \param n_points The number of points.
+        \param contains_mask Mask of points inside the box.
+    */
+    void contains(const vec3<float>* points, const unsigned int n_points, bool* contains_mask) const
+    {
+        util::forLoopWrapper(0, n_points, [&](size_t begin, size_t end) {
+            for (size_t i = begin; i < n_points; ++i)
+            {
+                std::transform(&points[begin], &points[end], &contains_mask[begin],
+                               [this](const vec3<float>& point) -> bool {
+                                   vec3<int> image(0, 0, 0);
+                                   getImage(point, image);
+                                   return image == vec3<int>(0, 0, 0);
+                               });
             }
-        );
+        });
     }
 
     //! Get the shortest distance between opposite boundary planes of the box
@@ -461,8 +497,8 @@ public:
     vec3<float> getNearestPlaneDistance() const
     {
         vec3<float> dist;
-        dist.x = m_L.x / std::sqrt(1.0f + m_xy * m_xy + (m_xy * m_yz - m_xz) * (m_xy * m_yz - m_xz));
-        dist.y = m_L.y / std::sqrt(1.0f + m_yz * m_yz);
+        dist.x = m_L.x / std::sqrt(float(1.0) + m_xy * m_xy + (m_xy * m_yz - m_xz) * (m_xy * m_yz - m_xz));
+        dist.y = m_L.y / std::sqrt(float(1.0) + m_yz * m_yz);
         dist.z = m_L.z;
 
         return dist;
@@ -478,19 +514,15 @@ public:
         {
             return vec3<float>(m_L.x, 0.0, 0.0);
         }
-        else if (i == 1)
+        if (i == 1)
         {
             return vec3<float>(m_L.y * m_xy, m_L.y, 0.0);
         }
-        else if (i == 2 && !m_2d)
+        if (i == 2 && !m_2d)
         {
             return vec3<float>(m_L.z * m_xz, m_L.z * m_yz, m_L.z);
         }
-        else
-        {
-            throw std::out_of_range("Box lattice vector index requested does not exist.");
-        }
-        return vec3<float>(0.0, 0.0, 0.0);
+        throw std::out_of_range("Box lattice vector index requested does not exist.");
     }
 
     //! Set the periodic flags
@@ -528,7 +560,7 @@ public:
     //! Get the periodic flags
     vec3<bool> getPeriodic() const
     {
-        return vec3<bool>(m_periodic.x, m_periodic.y, m_periodic.z);
+        return {m_periodic.x, m_periodic.y, m_periodic.z};
     }
 
     //! Get the periodic flag along x

@@ -9,7 +9,7 @@
 
 namespace freud { namespace parallel {
 
-tbb::task_scheduler_init* ts = NULL;
+tbb::task_scheduler_init* ts = nullptr;
 
 /*! \param N Number of threads to use for TBB computations
 
@@ -23,12 +23,14 @@ void setNumThreads(unsigned int N)
     tbb::task_scheduler_init* old_ts(ts);
 
     if (N == 0)
+    {
         N = tbb::task_scheduler_init::automatic;
+    }
 
     delete old_ts;
 
     // then recreate it
-    ts = new tbb::task_scheduler_init(N);
+    ts = new tbb::task_scheduler_init(static_cast<int>(N));
 }
 
 }; }; // end namespace freud::parallel

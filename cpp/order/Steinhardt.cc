@@ -12,7 +12,7 @@
 namespace freud { namespace order {
 
 // Calculating Ylm using fsph module
-void Steinhardt::computeYlm(const float theta, const float phi, std::vector<std::complex<float>>& Ylm)
+void Steinhardt::computeYlm(const float theta, const float phi, std::vector<std::complex<float>>& Ylm) const
 {
     if (Ylm.size() != m_num_ms)
     {
@@ -30,7 +30,9 @@ void Steinhardt::computeYlm(const float theta, const float phi, std::vector<std:
         // Manually add the Condon-Shortley phase, (-1)^m, to positive odd m
         float phase = 1;
         if (m_index <= m_l && m_index % 2 == 1)
+        {
             phase = -1;
+        }
 
         Ylm[m_index] = phase * (*iter);
         ++m_index;
@@ -88,19 +90,19 @@ void Steinhardt::compute(const freud::locality::NeighborList* nlist,
 void Steinhardt::baseCompute(const freud::locality::NeighborList* nlist,
                              const freud::locality::NeighborQuery* points, freud::locality::QueryArgs qargs)
 {
-    const float normalizationfactor = float(4 * M_PI / m_num_ms);
+    const auto normalizationfactor = float(4.0 * M_PI / m_num_ms);
     // For consistency, this reset is done here regardless of whether the array
     // is populated in baseCompute or computeAve.
     m_qlm_local.reset();
     freud::locality::loopOverNeighborsIterator(
         points, points->getPoints(), m_Np, qargs, nlist,
-        [=](size_t i, std::shared_ptr<freud::locality::NeighborPerPointIterator> ppiter) {
+        [=](size_t i, const std::shared_ptr<freud::locality::NeighborPerPointIterator>& ppiter) {
             float total_weight(0);
             const vec3<float> ref((*points)[i]);
             for (freud::locality::NeighborBond nb = ppiter->next(); !ppiter->end(); nb = ppiter->next())
             {
                 const vec3<float> delta = points->getBox().wrap((*points)[nb.point_idx] - ref);
-                const float weight(m_weighted ? nb.weight : 1.0);
+                const float weight(m_weighted ? nb.weight : float(1.0));
 
                 // phi is usually in range 0..2Pi, but
                 // it only appears in Ylm as exp(im\phi),
@@ -153,23 +155,23 @@ void Steinhardt::computeAve(const freud::locality::NeighborList* nlist,
                             const freud::locality::NeighborQuery* points, freud::locality::QueryArgs qargs)
 {
     std::shared_ptr<locality::NeighborQueryIterator> iter;
-    if (nlist == NULL)
+    if (nlist == nullptr)
     {
         iter = points->query(points->getPoints(), points->getNPoints(), qargs);
     }
 
-    const float normalizationfactor = 4 * M_PI / m_num_ms;
+    const auto normalizationfactor = float(4.0 * M_PI / m_num_ms);
 
     freud::locality::loopOverNeighborsIterator(
         points, points->getPoints(), m_Np, qargs, nlist,
-        [=](size_t i, std::shared_ptr<freud::locality::NeighborPerPointIterator> ppiter) {
+        [=](size_t i, const std::shared_ptr<freud::locality::NeighborPerPointIterator>& ppiter) {
             unsigned int neighborcount(1);
             for (freud::locality::NeighborBond nb1 = ppiter->next(); !ppiter->end(); nb1 = ppiter->next())
             {
                 // Since we need to find neighbors of neighbors, we need to add some extra logic here to
                 // create the appropriate iterators.
                 std::shared_ptr<freud::locality::NeighborPerPointIterator> ns_neighbors_iter;
-                if (nlist != NULL)
+                if (nlist != nullptr)
                 {
                     ns_neighbors_iter
                         = std::make_shared<locality::NeighborListPerPointIterator>(nlist, nb1.point_idx);
@@ -200,7 +202,7 @@ void Steinhardt::computeAve(const freud::locality::NeighborList* nlist,
                 const unsigned int index = m_qlmiAve.getIndex({static_cast<unsigned int>(i), k});
                 // Adding the qlm of the particle i itself
                 m_qlmiAve[index] += m_qlmi[index];
-                m_qlmiAve[index] /= neighborcount;
+                m_qlmiAve[index] /= static_cast<float>(neighborcount);
                 m_qlm_local.local()[k] += m_qlmiAve[index] / float(m_Np);
                 // Add the norm, which is the complex squared magnitude
                 m_qliAve[i] += norm(m_qlmiAve[index]);
@@ -213,7 +215,7 @@ void Steinhardt::computeAve(const freud::locality::NeighborList* nlist,
 float Steinhardt::normalizeSystem()
 {
     float calc_norm(0);
-    const float normalizationfactor = 4 * M_PI / m_num_ms;
+    const auto normalizationfactor = float(4.0 * M_PI / m_num_ms);
     for (unsigned int k = 0; k < m_num_ms; ++k)
     {
         // Add the norm, which is the complex squared magnitude
@@ -235,18 +237,16 @@ float Steinhardt::normalizeSystem()
         }
         return wl_system_norm;
     }
-    else
-    {
-        return ql_system_norm;
-    }
+
+    return ql_system_norm;
 }
 
 void Steinhardt::aggregatewl(util::ManagedArray<float>& target,
-                             util::ManagedArray<std::complex<float>>& source,
-                             util::ManagedArray<float>& normalization_source)
+                             const util::ManagedArray<std::complex<float>>& source,
+                             const util::ManagedArray<float>& normalization_source) const
 {
     auto wigner3jvalues = getWigner3j(m_l);
-    const float normalizationfactor = float(4 * M_PI / m_num_ms);
+    const auto normalizationfactor = float(4.0 * M_PI / m_num_ms);
     util::forLoopWrapper(0, m_Np, [&](size_t begin, size_t end) {
         for (size_t i = begin; i < end; ++i)
         {

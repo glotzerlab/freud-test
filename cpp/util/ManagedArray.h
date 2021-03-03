@@ -2,7 +2,9 @@
 #define MANAGED_ARRAY_H
 
 #include <cstring>
+#include <functional>
 #include <memory>
+#include <numeric>
 #include <sstream>
 #include <vector>
 
@@ -49,7 +51,7 @@ public:
      *
      *  \param shape Shape of the array to allocate.
      */
-    ManagedArray(std::vector<size_t> shape = {0})
+    ManagedArray(const std::vector<size_t>& shape = {0})
     {
         prepare(shape, true);
     }
@@ -60,10 +62,10 @@ public:
      *
      *  \param shape Shape of the array to allocate.
      */
-    ManagedArray(size_t size) : ManagedArray(std::vector<size_t> {size}) {}
+    explicit ManagedArray(size_t size) : ManagedArray(std::vector<size_t> {size}) {}
 
     //! Destructor (currently empty because data is managed by shared pointer).
-    ~ManagedArray() {}
+    ~ManagedArray() = default;
 
     //! Simple convenience for 1D arrays that calls through to the shape based `prepare` function.
     /*! \param new_size Size of the 1D array to allocate.
@@ -82,7 +84,7 @@ public:
      *  \param new_shape Shape of the array to allocate.
      *  \param force Reallocate regardless of whether anything changed or needs to be persisted.
      */
-    void prepare(std::vector<size_t> new_shape, bool force = false)
+    void prepare(const std::vector<size_t>& new_shape, bool force = false)
     {
         // If we resized, or if there are outstanding references, we create a new array. No matter what,
         // reset.
@@ -91,13 +93,19 @@ public:
             m_shape = std::make_shared<std::vector<size_t>>(new_shape);
 
             m_size = std::make_shared<size_t>(1);
-            for (int i = m_shape->size() - 1; i >= 0; --i)
+            for (unsigned int i = m_shape->size() - 1; i != static_cast<unsigned int>(-1); --i)
             {
                 (*m_size) *= (*m_shape)[i];
             }
 
-            m_data = std::shared_ptr<std::shared_ptr<T>>(
-                new std::shared_ptr<T>(new T[size()], std::default_delete<T[]>()));
+            // We make use of C-style arrays here rather than any alternative
+            // because we need the underlying data representation to be
+            // compatible with numpy on the Python side. We _could_ do this
+            // with a different data structure like std::vector, but it would
+            // require writing additional gymnastics to ensure proper reference
+            // management and should be carefully considered before any rewrite.
+            m_data = std::shared_ptr<std::shared_ptr<T>>(new std::shared_ptr<T>(
+                new T[size()], std::default_delete<T[]>())); // NOLINT(modernize-avoid-c-arrays)
         }
         reset();
     }
@@ -111,16 +119,24 @@ public:
         }
     }
 
+    //! Return a constant pointer to the underlying data (requires two levels of indirection).
+    const T* get() const
+    {
+        std::shared_ptr<T>* tmp = m_data.get();
+        return (*tmp).get();
+    }
+
     //! Return the underlying pointer (requires two levels of indirection).
     /*! This function should only be used by client code when a raw pointer is
      * absolutely required. It is primarily part of the public API for the
      * purpose of freud's Python API, which requires a non-const pointer to the
      * data to construct a numpy array. There are specific use-cases (e.g.
-     * interacting with Eigen) where directly accessing the underlying data
-     * pointer is valuable, but users should be cautious about overusing calls
-     * to get() rather than using the various operators provided by the class.
+     * interacting with Eigen) where directly accessing a mutable version of
+     * the underlying data pointer is necessary, but users should be cautious
+     * about overusing calls to get() rather than using the various operators
+     * provided by the class.
      */
-    T* get() const
+    T* get()
     {
         std::shared_ptr<T>* tmp = m_data.get();
         return (*tmp).get();
@@ -182,12 +198,18 @@ public:
     //! Implementation of variadic indexing function.
     template<typename... Ints> inline T& operator()(Ints... indices)
     {
+        // cppcheck generates a false positive here on old machines (CI),
+        // probably due to limited template support on those compilers.
+        // cppcheck-suppress returnTempReference
         return (*this)(buildIndex(indices...));
     }
 
     //! Constant implementation of variadic indexing function.
     template<typename... Ints> inline const T& operator()(Ints... indices) const
     {
+        // cppcheck generates a false positive here on old machines (CI),
+        // probably due to limited template support on those compilers.
+        // cppcheck-suppress returnTempReference
         return (*this)(buildIndex(indices...));
     }
 
@@ -201,11 +223,14 @@ public:
      * become a performance bottleneck when used in highly performance critical
      * code paths.
      */
-    inline T& operator()(std::vector<size_t> indices)
+    inline T& operator()(const std::vector<size_t>& indices)
     {
         size_t cur_prod = 1;
         size_t idx = 0;
-        for (int i = indices.size() - 1; i >= 0; --i)
+        // In getting the linear bin, we must iterate over bins in reverse
+        // order to build up the value of cur_prod because each subsequent axis
+        // contributes less according to row-major ordering.
+        for (unsigned int i = indices.size() - 1; i != static_cast<unsigned int>(-1); --i)
         {
             idx += indices[i] * cur_prod;
             cur_prod *= (*m_shape)[i];
@@ -214,11 +239,14 @@ public:
     }
 
     //! Const version of core function for multidimensional indexing.
-    inline const T& operator()(std::vector<size_t> indices) const
+    inline const T& operator()(const std::vector<size_t>& indices) const
     {
         size_t cur_prod = 1;
         size_t idx = 0;
-        for (int i = indices.size() - 1; i >= 0; --i)
+        // In getting the linear bin, we must iterate over bins in reverse
+        // order to build up the value of cur_prod because each subsequent axis
+        // contributes less according to row-major ordering.
+        for (unsigned int i = indices.size() - 1; i != static_cast<unsigned int>(-1); --i)
         {
             idx += indices[i] * cur_prod;
             cur_prod *= (*m_shape)[i];
@@ -233,21 +261,17 @@ public:
      *  \param shape The shape to map indexes to.
      *  \param indices The index in each dimension.
      */
-    static inline std::vector<size_t> getMultiIndex(std::vector<size_t> shape, size_t index)
+    static inline std::vector<size_t> getMultiIndex(const std::vector<size_t>& shape, size_t index)
     {
-        size_t cur_prod = 1;
-        for (auto it = shape.begin(); it != shape.end(); ++it)
-        {
-            cur_prod *= *it;
-        }
+        size_t index_size = std::accumulate(shape.cbegin(), shape.cend(), 1, std::multiplies<>());
 
         std::vector<size_t> indices(shape.size());
         for (unsigned int i = 0; i < shape.size(); ++i)
         {
-            cur_prod /= shape[i];
+            index_size /= shape[i];
             // Integer division should cast away extras.
-            indices[i] = index / cur_prod;
-            index %= cur_prod;
+            indices[i] = index / index_size;
+            index %= index_size;
         }
         return indices;
     }
@@ -259,14 +283,14 @@ public:
      *  \param shape The shape to map indexes to.
      *  \param indices The index in each dimension.
      */
-    static inline size_t getIndex(std::vector<size_t> shape, std::vector<size_t> indices)
+    static inline size_t getIndex(const std::vector<size_t>& shape, const std::vector<size_t>& indices)
     {
+        size_t cur_prod = 1;
+        size_t idx = 0;
         // In getting the linear bin, we must iterate over bins in reverse
         // order to build up the value of cur_prod because each subsequent axis
         // contributes less according to row-major ordering.
-        size_t cur_prod = 1;
-        size_t idx = 0;
-        for (int i = indices.size() - 1; i >= 0; --i)
+        for (unsigned int i = indices.size() - 1; i != static_cast<unsigned int>(-1); --i)
         {
             idx += indices[i] * cur_prod;
             cur_prod *= shape[i];
@@ -282,7 +306,7 @@ public:
      *
      *  \param indices The index in each dimension.
      */
-    inline size_t getIndex(std::vector<size_t> indices) const
+    inline size_t getIndex(const std::vector<size_t>& indices) const
     {
         if (indices.size() != m_shape->size())
         {
@@ -300,17 +324,7 @@ public:
             }
         }
 
-        // In getting the linear bin, we must iterate over bins in reverse
-        // order to build up the value of cur_prod because each subsequent axis
-        // contributes less according to row-major ordering.
-        size_t cur_prod = 1;
-        size_t idx = 0;
-        for (int i = indices.size() - 1; i >= 0; --i)
-        {
-            idx += indices[i] * cur_prod;
-            cur_prod *= (*m_shape)[i];
-        }
-        return idx;
+        return getIndex(*m_shape, indices);
     }
 
     //! Return a copy of this array.
@@ -323,7 +337,9 @@ public:
     {
         ManagedArray newarray(shape());
         for (unsigned int i = 0; i < size(); ++i)
+        {
             newarray[i] = get()[i];
+        }
         return newarray;
     }
 

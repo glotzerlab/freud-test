@@ -5,6 +5,7 @@ import matplotlib
 import unittest
 import util
 from test_managedarray import TestManagedArray
+from numpy.lib import NumpyVersion
 matplotlib.use('agg')
 
 
@@ -165,6 +166,8 @@ class TestRDF(unittest.TestCase):
         npt.assert_array_equal(rdf.rdf, np.zeros(bins))
         npt.assert_array_equal(rdf.n_r, np.zeros(bins))
 
+    @unittest.skipIf(NumpyVersion(np.__version__) < "1.15.0",
+                     "Requires numpy>=1.15.0.")
     def test_bin_precision(self):
         # Ensure bin edges are precise
         bins = 500

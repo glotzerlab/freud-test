@@ -50,10 +50,10 @@ public:
     CorrelationFunction(unsigned int bins, float r_max);
 
     //! Destructor
-    ~CorrelationFunction() {}
+    ~CorrelationFunction() override = default;
 
     //! Reset the PCF array to all zeros
-    virtual void reset();
+    void reset() override;
 
     //! accumulate the correlation function
     void accumulate(const freud::locality::NeighborQuery* neighbor_query, const T* values,
@@ -62,7 +62,7 @@ public:
 
     //! \internal
     //! helper function to reduce the thread specific arrays into one array
-    virtual void reduce();
+    void reduce() override;
 
     //! Get a reference to the last computed correlation function.
     const util::ManagedArray<T>& getCorrelation()
@@ -72,7 +72,7 @@ public:
 
 private:
     // Typedef thread local histogram type for use in code.
-    typedef typename util::Histogram<T>::ThreadLocalHistogram CFThreadHistogram;
+    using CFThreadHistogram = typename util::Histogram<T>::ThreadLocalHistogram;
 
     util::Histogram<T> m_correlation_function;      //!< The correlation function
     CFThreadHistogram m_local_correlation_function; //!< Thread local copy of the correlation function

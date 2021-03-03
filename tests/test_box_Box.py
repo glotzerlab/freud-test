@@ -160,7 +160,7 @@ class TestBox(unittest.TestCase):
         npt.assert_allclose(
             box.unwrap(points, imgs), [[20, 1, 2], [21, 1, 2]], rtol=1e-6)
 
-    def test_images(self):
+    def test_images_3d(self):
         box = freud.box.Box(2, 2, 2, 0, 0, 0)
         points = np.array([[50, 40, 30],
                            [-10, 0, 0]])
@@ -171,6 +171,19 @@ class TestBox(unittest.TestCase):
         images = box.get_images(points)
         npt.assert_equal(images,
                          np.array([[25, 20, 15],
+                                   [-5, 0, 0]]))
+
+    def test_images_2d(self):
+        box = freud.box.Box(2, 2, 0, 0, 0, 0)
+        points = np.array([[50, 40, 0],
+                           [-10, 0, 0]])
+        images = np.array([box.get_images(vec) for vec in points])
+        npt.assert_equal(images,
+                         np.array([[25, 20, 0],
+                                   [-5, 0, 0]]))
+        images = box.get_images(points)
+        npt.assert_equal(images,
+                         np.array([[25, 20, 0],
                                    [-5, 0, 0]]))
 
     def test_center_of_mass(self):
@@ -495,6 +508,32 @@ class TestBox(unittest.TestCase):
         distances = box.compute_all_distances(points, query_points)
         npt.assert_allclose(distances,
                             [[1., 0., 1.], [np.sqrt(2), 1., 0.]], rtol=1e-6)
+
+    def test_contains_2d(self):
+        box = freud.box.Box(2, 3, 0, 1, 0, 0)
+        points = np.random.uniform(-0.5, 0.5, size=(100, 3)).astype(np.float32)
+        points[:50] = np.random.uniform(
+            0.50001, 0.6, size=(50, 3)).astype(np.float32)
+        points[:50] *= (-1)**np.random.randint(0, 2, size=(50, 3))
+        points = points @ box.to_matrix().T
+        # Force z=0
+        points[:, 2] = 0
+
+        in_box_mask = np.ones(points.shape[0]).astype(bool)
+        in_box_mask[:50] = False
+        npt.assert_array_equal(in_box_mask, box.contains(points))
+
+    def test_contains_3d(self):
+        box = freud.box.Box(2, 3, 4, 1, 0.1, 0.3)
+        points = np.random.uniform(-0.5, 0.5, size=(100, 3)).astype(np.float32)
+        points[:50] = np.random.uniform(
+            0.50001, 0.6, size=(50, 3)).astype(np.float32)
+        points[:50] *= (-1)**np.random.randint(0, 2, size=(50, 3))
+        points = points @ box.to_matrix().T
+
+        in_box_mask = np.ones(points.shape[0]).astype(bool)
+        in_box_mask[:50] = False
+        npt.assert_array_equal(in_box_mask, box.contains(points))
 
 
 if __name__ == '__main__':

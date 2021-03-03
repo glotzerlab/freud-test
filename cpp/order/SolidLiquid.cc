@@ -33,7 +33,7 @@ void SolidLiquid::compute(const freud::locality::NeighborList* nlist,
     const auto& ql = m_steinhardt.getQl();
 
     // Compute (normalized) dot products for each bond in the neighbor list
-    const float normalizationfactor = float(4 * M_PI / m_num_ms);
+    const auto normalizationfactor = float(4.0 * M_PI / m_num_ms);
     const unsigned int num_bonds(m_nlist.getNumBonds());
     m_ql_ij.prepare(num_bonds);
 
@@ -67,13 +67,13 @@ void SolidLiquid::compute(const freud::locality::NeighborList* nlist,
         true);
 
     // Filter neighbors to contain only solid-like bonds
-    std::unique_ptr<bool[]> solid_filter(new bool[num_bonds]);
+    std::vector<bool> solid_filter(num_bonds);
     for (unsigned int bond(0); bond < num_bonds; bond++)
     {
         solid_filter[bond] = (m_ql_ij[bond] > m_q_threshold);
     }
     freud::locality::NeighborList solid_nlist(m_nlist);
-    solid_nlist.filter(solid_filter.get());
+    solid_nlist.filter(solid_filter.cbegin());
 
     // Save the neighbor counts of solid-like bonds for each query point
     m_number_of_connections.prepare(num_query_points);
@@ -85,7 +85,7 @@ void SolidLiquid::compute(const freud::locality::NeighborList* nlist,
     // Filter nlist to only bonds between solid-like particles
     // (particles with more than solid_threshold solid-like bonds)
     const unsigned int num_solid_bonds(solid_nlist.getNumBonds());
-    std::unique_ptr<bool[]> neighbor_count_filter(new bool[num_solid_bonds]);
+    std::vector<bool> neighbor_count_filter(num_solid_bonds);
     for (unsigned int bond(0); bond < num_solid_bonds; bond++)
     {
         const unsigned int i(solid_nlist.getNeighbors()(bond, 0));
@@ -94,7 +94,7 @@ void SolidLiquid::compute(const freud::locality::NeighborList* nlist,
                                        && m_number_of_connections[j] >= m_solid_threshold);
     }
     freud::locality::NeighborList solid_neighbor_nlist(solid_nlist);
-    solid_neighbor_nlist.filter(neighbor_count_filter.get());
+    solid_neighbor_nlist.filter(neighbor_count_filter.cbegin());
 
     // Find clusters of solid-like particles
     m_cluster.compute(points, &solid_neighbor_nlist, qargs);

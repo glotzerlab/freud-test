@@ -79,7 +79,7 @@ Under the hood, the underlying C++ classes loop through candidate points and ide
 Custom NeighborLists
 ====================
 
-Thus far, we've mostly discussed :class:`NeighborLists <freud.locality.NeighborList` as a way to persist neighbor information beyond a single query.
+Thus far, we've mostly discussed :class:`NeighborLists <freud.locality.NeighborList>` as a way to persist neighbor information beyond a single query.
 In :ref:`optimizing`, more guidance is provided on how you can use these objects to speed up certain uses of **freud**.
 However, these objects are also extremely useful because they provide a *completely customizable* way to specify neighbors to **freud**.
 Of particular note here is the :meth:`freud.locality.NeighborList.from_arrays` factory function that allows you to make :class:`freud.locality.NeighborList` objects by directly specifying the ``(i, j)`` pairs that should be in the list.

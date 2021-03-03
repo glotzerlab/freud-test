@@ -2,6 +2,7 @@
 // This file is from the freud project, released under the BSD 3-Clause License.
 
 #include <cmath>
+#include <iterator>
 #include <tbb/parallel_sort.h>
 #include <vector>
 
@@ -40,39 +41,31 @@ namespace freud { namespace locality {
 // Voronoi calculations should be kept in double precision.
 void Voronoi::compute(const freud::locality::NeighborQuery* nq)
 {
-    auto box = nq->getBox();
-    auto n_points = nq->getNPoints();
+    const auto box = nq->getBox();
+    const auto n_points = nq->getNPoints();
 
     m_polytopes.resize(n_points);
     m_faces.resize(n_points);
     m_neighbors.resize(n_points);
     m_volumes.prepare(n_points);
 
-    vec3<float> boxLatticeVectors[3];
-    boxLatticeVectors[0] = box.getLatticeVector(0);
-    boxLatticeVectors[1] = box.getLatticeVector(1);
-    if (box.is2D())
-    {
-        boxLatticeVectors[2] = vec3<float>(0, 0, 1);
-    }
-    else
-    {
-        boxLatticeVectors[2] = box.getLatticeVector(2);
-    }
+    const vec3<float> v1 = box.getLatticeVector(0);
+    const vec3<float> v2 = box.getLatticeVector(1);
+    const vec3<float> v3 = (box.is2D() ? vec3<float>(0, 0, 1) : box.getLatticeVector(2));
 
     // This heuristic for choosing blocks is based on the voro::pre_container
     // guess_optimal method. By computing the heuristic directly, we avoid
     // having to create a pre_container. This saves time because the
     // pre_container cannot be used to set up container_periodic (only
     // non-periodic containers are compatible).
-    float block_scale = std::pow(n_points / (voro::optimal_particles * box.getVolume()), 1.0 / 3.0);
-    int voro_blocks_x = int(box.getLx() * block_scale + 1);
-    int voro_blocks_y = int(box.getLy() * block_scale + 1);
-    int voro_blocks_z = int(box.getLz() * block_scale + 1);
+    const float block_scale
+        = std::pow(n_points / (voro::optimal_particles * box.getVolume()), float(1.0 / 3.0));
+    const int voro_blocks_x = int(box.getLx() * block_scale + 1);
+    const int voro_blocks_y = int(box.getLy() * block_scale + 1);
+    const int voro_blocks_z = int(box.getLz() * block_scale + 1);
 
-    voro::container_periodic container(boxLatticeVectors[0].x, boxLatticeVectors[1].x, boxLatticeVectors[1].y,
-                                       boxLatticeVectors[2].x, boxLatticeVectors[2].y, boxLatticeVectors[2].z,
-                                       voro_blocks_x, voro_blocks_y, voro_blocks_z, 3);
+    voro::container_periodic container(v1.x, v2.x, v2.y, v3.x, v3.y, v3.z, voro_blocks_x, voro_blocks_y,
+                                       voro_blocks_z, 3);
 
     for (size_t query_point_id = 0; query_point_id < n_points; query_point_id++)
     {
@@ -136,19 +129,19 @@ void Voronoi::compute(const freud::locality::NeighborQuery* nq)
             if (box.is2D())
             {
                 std::sort(relative_vertices.begin(), relative_vertices.end(),
-                          [](const vec3<double> a, const vec3<double> b) {
+                          [](const vec3<double>& a, const vec3<double>& b) {
                               return std::atan2(a.y, a.x) < std::atan2(b.y, b.x);
                           });
             }
 
             // Save polytope vertices in system coordinates
+            const vec3<double>& query_point_system_coords((*nq)[query_point_id]);
+
             std::vector<vec3<double>> system_vertices;
-            const vec3<double> query_point_system_coords((*nq)[query_point_id]);
-            for (auto vertex_iter = relative_vertices.begin(); vertex_iter != relative_vertices.end();
-                 vertex_iter++)
-            {
-                system_vertices.push_back((*vertex_iter) + query_point_system_coords);
-            }
+            system_vertices.reserve(relative_vertices.size());
+            std::transform(
+                relative_vertices.begin(), relative_vertices.end(), std::back_inserter(system_vertices),
+                [&](const auto& relative_vertex) { return relative_vertex + query_point_system_coords; });
             m_polytopes[query_point_id] = system_vertices;
 
             // Save cell volume
@@ -167,8 +160,14 @@ void Voronoi::compute(const freud::locality::NeighborQuery* nq)
 
                 // Ignore bonds in 2D systems that point up or down. This check
                 // should only be dealing with bonds whose normal vectors' z
-                // components are -1, 0, or +1 (within some tolerance).
-                if (box.is2D() && std::abs(normal.z) > 0.5)
+                // components are -1, 0, or +1 (within some tolerance). This
+                // also skips bonds where the normal vector is exactly zero.
+                // A normal vector of exactly zero seems to appear for certain
+                // particles in 2D systems where the neighbors are very close.
+                // It seems like an issue of numerical imprecision but could be
+                // some other pathological case.
+                if (box.is2D() && std::abs(normal.z) > 0.5
+                    || (normal.x == 0 && normal.y == 0 && normal.z == 0))
                 {
                     continue;
                 }
@@ -182,7 +181,7 @@ void Voronoi::compute(const freud::locality::NeighborQuery* nq)
                 const vec3<float> rij = box.wrap(point_system_coords - query_point_system_coords);
                 const float distance(std::sqrt(dot(rij, rij)));
 
-                bonds.push_back(NeighborBond(query_point_id, point_id, distance, weight));
+                bonds.emplace_back(query_point_id, point_id, distance, weight);
 
                 std::vector<int> facevertexlist;
                 getFaceVerticesOfFace(face_vertices, neighbor_counter, facevertexlist);

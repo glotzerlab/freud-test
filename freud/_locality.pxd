@@ -21,10 +21,10 @@ cdef extern from "NeighborBond.h" namespace "freud::locality":
 
 cdef extern from "NeighborQuery.h" namespace "freud::locality":
 
-    ctypedef enum QueryType "freud::locality::QueryArgs::QueryType":
-        none "freud::locality::QueryArgs::QueryType::none"
-        ball "freud::locality::QueryArgs::QueryType::ball"
-        nearest "freud::locality::QueryArgs::QueryType::nearest"
+    ctypedef enum QueryType "freud::locality::QueryType":
+        none "freud::locality::QueryType::none"
+        ball "freud::locality::QueryType::ball"
+        nearest "freud::locality::QueryType::nearest"
 
     cdef cppclass QueryArgs:
         QueryType mode
@@ -48,7 +48,7 @@ cdef extern from "NeighborQuery.h" namespace "freud::locality":
         const vec3[float] operator[](unsigned int) const
 
     NeighborBond ITERATOR_TERMINATOR \
-        "freud::locality::NeighborQueryIterator::ITERATOR_TERMINATOR"
+        "freud::locality::ITERATOR_TERMINATOR"
 
     cdef cppclass NeighborQueryIterator:
         NeighborQueryIterator()
@@ -83,7 +83,7 @@ cdef extern from "NeighborList.h" namespace "freud::locality":
         unsigned int getNumPoints() const
         unsigned int getNumQueryPoints() const
         void setNumBonds(unsigned int, unsigned int, unsigned int)
-        unsigned int filter(const bool*) except +
+        unsigned int filter[Iterator](const Iterator) except +
         unsigned int filter_r(float, float) except +
 
         unsigned int find_first_index(unsigned int)

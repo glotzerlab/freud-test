@@ -30,7 +30,7 @@ public:
     SphereVoxelization(vec3<unsigned int> width, float r_max);
 
     // Destructor
-    ~SphereVoxelization() {}
+    ~SphereVoxelization() = default;
 
     //! Get the simulation box.
     const box::Box& getBox() const
