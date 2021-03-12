@@ -681,7 +681,7 @@ cdef class NeighborList:
             # Keep only the bonds between particles of type A and type B
             nlist.filter(types[nlist.query_point_indices] != types[nlist.point_indices])
         """  # noqa E501
-        filt = np.ascontiguousarray(filt, dtype=np.bool)
+        filt = np.ascontiguousarray(filt, dtype=bool)
         cdef np.ndarray[np.uint8_t, ndim=1, cast=True] filt_c = filt
         cdef const cbool * filt_ptr = <cbool*> &filt_c[0]
         self.thisptr.filter(filt_ptr)

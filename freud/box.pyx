@@ -534,14 +534,14 @@ cdef class Box:
             size_t n_all_points = points.shape[0]
 
         contains_mask = freud.util._convert_array(
-            np.ones(n_all_points), dtype=np.bool)
+            np.ones(n_all_points), dtype=bool)
         cdef cpp_bool[::1] l_contains_mask = contains_mask
 
         self.thisptr.contains(
             <vec3[float]*> &l_points[0, 0], n_all_points,
             <cpp_bool*> &l_contains_mask[0])
 
-        return np.array(l_contains_mask).astype(np.bool)
+        return np.array(l_contains_mask).astype(bool)
 
     @property
     def periodic(self):
