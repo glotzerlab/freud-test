@@ -298,6 +298,7 @@ cdef class DiffractionPattern(_Compute):
             self._k_vectors = rowan.rotate(
                 self._view_orientation,
                 self._k_vectors_orig) / self._box_matrix_scale_factor
+            self._k_vectors[:,:,0] = np.asarray(self._k_vectors[:, :, 0]) * 2.0
             self._k_vectors_cached = True
         return np.asarray(self._k_vectors)
 
