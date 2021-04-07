@@ -1,8 +1,10 @@
 # We use the IN_LIST operator, which is first supported in 3.3.0. This is the
 # oldest version of CMake that this build script has been tested with. However,
 # the oldest CMake actively tested against will be determined by the oldest
-# CMake available on PyPI (which is 3.6.3).
-cmake_minimum_required(VERSION 3.3.0)
+# CMake available on PyPI (which is 3.6.3). Deprecation warnings are shown if
+# this version is below 3.13, so we have a max of 3.13. Newer versions are
+# supported and will not show the deprecation warning.
+cmake_minimum_required(VERSION 3.3.0...3.13)
 
 set(DEFAULT_BUILD_TYPE "ReleaseWithDocs")
 
