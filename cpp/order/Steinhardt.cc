@@ -4,6 +4,7 @@
 #include "Steinhardt.h"
 #include "NeighborComputeFunctional.h"
 #include "utils.h"
+#include <vector>
 
 /*! \file Steinhardt.cc
     \brief Computes variants of Steinhardt order parameters.
