@@ -1,4 +1,4 @@
-$PackageDir = $args[0]
+$PACKAGE_DIR = $args[0]
 
 # Install a modern version of CMake for compatibility with modern Visual Studio
 pip install cmake
@@ -14,6 +14,5 @@ cd "${PACKAGE_DIR}/tbb"
 mkdir -p build
 cd build
 cmake ../ -DTBB_TEST=OFF
-cmake --build . -j
-cmake -DCOMPONENT=runtime -P cmake_install.cmake
-cmake -DCOMPONENT=devel -P cmake_install.cmake
+cmake --build . -j --config Release
+cmake --install . --config Release

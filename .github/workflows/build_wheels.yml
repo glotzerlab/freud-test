@@ -25,13 +25,17 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-20.04, macos-10.15] #, windows-2019]
+        os: [windows-2019] #ubuntu-20.04, macos-10.15]
         pyver: [3.6, 3.7, 3.8, 3.9]
 
     steps:
       - uses: actions/checkout@v2.3.4
         with:
           submodules: "recursive"
+
+      # Configure compilers for Windows. Does nothing on Linux/Mac.
+      - name: Enable Developer Command Prompt
+        uses: ilammy/msvc-dev-cmd@v1
 
       - name: Build wheels
         uses: joerick/cibuildwheel@v1.10.0
@@ -54,16 +58,27 @@ jobs:
           CIBW_BEFORE_BUILD_MACOS: "source .github/workflows/cibuildwheel-before-build.sh {package} macos"
           CIBW_BEFORE_BUILD_WINDOWS: "powershell .github/workflows/cibuildwheel-before-build.ps1 {package}"
 
+          # Repair the wheels.
+          # This is only needed on Windows; cibuildwheel repairs correctly on Linux/Mac.
+          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "powershell .github/workflows/cibuildwheel-repair-wheel.ps1 \"{dest_dir}\" \"{wheel}\""
+
           # Test the wheels.
           CIBW_BEFORE_TEST_LINUX: "source .github/workflows/cibuildwheel-before-test.sh {package}"
           CIBW_BEFORE_TEST_MACOS: "source .github/workflows/cibuildwheel-before-test.sh {package}"
           CIBW_BEFORE_TEST_WINDOWS: "powershell .github/workflows/cibuildwheel-before-test.ps1 {package}"
-          CIBW_TEST_COMMAND: "cd {package}/tests && pytest . -v --log-level=DEBUG -n auto"
+          CIBW_TEST_COMMAND_LINUX: "cd {project}/tests && python -m pytest . -v --log-level=DEBUG --rootdir={project}/tests"
+          CIBW_TEST_COMMAND_MACOS: "cd {project}/tests && python -m pytest . -v --log-level=DEBUG --rootdir={project}/tests"
+          CIBW_TEST_COMMAND_WINDOWS: "cd {project}/tests && python -c \"import freud; print(freud.__version__)\""
 
       - uses: actions/upload-artifact@v2.2.3
         with:
           name: dist
           path: ./wheelhouse/*.whl
+
+#     - name: Setup tmate session
+#       if: ${{ failure() }}
+#       uses: mxschmitt/action-tmate@v3
+#       timeout-minutes: 60
 
   build_sdist:
     name: Build source distribution

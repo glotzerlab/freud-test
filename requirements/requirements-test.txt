@@ -3,7 +3,7 @@ codecov==2.1.11
 coverage==5.5
 cython==0.29.23
 garnett==0.7.1
-GitPython==3.1.14
+GitPython==3.1.15
 gsd==2.4.2
 matplotlib>=3.0.0
 numpy==1.20.2

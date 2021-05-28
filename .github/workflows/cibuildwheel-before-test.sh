@@ -5,8 +5,9 @@ if [ -z $1 ]; then
 fi
 
 PACKAGE_DIR=$1
+PYTHON_VERSION=$(python --version 2>&1)
 
-if [[ $(python --version 2>&1) == *"3.6."* ]]; then
+if [[ "${PYTHON_VERSION}" == *"Python 3.6."* ]]; then
   # Python 3.6 is only supported with oldest requirements
   pip install -U -r "${PACKAGE_DIR}/.circleci/ci-oldest-reqs.txt" --progress-bar=off
 else
