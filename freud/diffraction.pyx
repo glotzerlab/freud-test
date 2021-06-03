@@ -67,6 +67,7 @@ cdef class DiffractionPattern(_Compute):
     cdef unsigned int _frame_counter
     cdef double _box_matrix_scale_factor
     cdef double[:] _view_orientation
+    cdef double _zoom
     cdef cbool _k_values_cached
     cdef cbool _k_vectors_cached
 
@@ -88,7 +89,7 @@ cdef class DiffractionPattern(_Compute):
 
     def _calc_proj(self, view_orientation, box):
         """Calculate the inverse shear matrix from finding the projected box
-        vectors whose area of parallogram is the largest.
+        vectors whose parallelogram area is the largest.
 
         Args:
             view_orientation ((:math:`4`) :class:`numpy.ndarray`):
@@ -116,6 +117,7 @@ cdef class DiffractionPattern(_Compute):
         # Determine the largest projection area along the view axis and use
         # that face for the projection into 2D.
         best_projection_axis = np.argmax(projections)
+        best_projection = np.max(projections)
         secondary_axes = np.array([
             best_projection_axis + 1, best_projection_axis + 2]) % 3
 
@@ -124,9 +126,9 @@ cdef class DiffractionPattern(_Compute):
 
         # Return the inverse shear matrix
         inv_shear = np.linalg.inv(shear)
-        return inv_shear
+        return inv_shear, best_projection
 
-    def _transform(self, img, box, inv_shear, zoom):
+    def _transform(self, img, box, inv_shear, zoom, best_projection):
         """Zoom, shear, and scale diffraction intensities.
 
         Args:
@@ -158,8 +160,9 @@ cdef class DiffractionPattern(_Compute):
             roll_shift -= 0.5 / zoom
 
         box_matrix = box.to_matrix()
-        ss = np.max(box_matrix) * inv_shear
-
+        # TODO: Should this use the max of the secondary indices?  (i.e.
+        # should a big Lz affect this?)
+        ss = np.sqrt(best_projection) * inv_shear
         shift_matrix = np.array(
             [[1, 0, -roll],
              [0, 1, -roll],
@@ -168,8 +171,8 @@ cdef class DiffractionPattern(_Compute):
         # Translation for [roll_shift, roll_shift]
         # Then shift using ss
         shear_matrix = np.array(
-            [[ss[1, 0], ss[0, 0], roll_shift],
-             [ss[1, 1], ss[0, 1], roll_shift],
+            [[0, ss[1, 1], roll_shift],
+             [ss[0, 0], 0, roll_shift],
              [0, 0, 1]])
 
         zoom_matrix = np.diag((zoom, zoom, 1))
@@ -221,7 +224,7 @@ cdef class DiffractionPattern(_Compute):
         grid_size = int(self.grid_size / zoom)
 
         # Compute the box projection matrix
-        inv_shear = self._calc_proj(view_orientation, system.box)
+        inv_shear, best_projection = self._calc_proj(view_orientation, system.box)
 
         # Rotate points by the view quaternion and shear by the box projection
         xy = rowan.rotate(view_orientation, system.points)[:, 0:2]
@@ -249,7 +252,7 @@ cdef class DiffractionPattern(_Compute):
         # Transform the image (scale, shear, zoom) and normalize S(k) by N^2
         N = len(system.points)
         diffraction_frame = self._transform(
-            diffraction_frame, system.box, inv_shear, zoom) / (N*N)
+            diffraction_frame, system.box, inv_shear, zoom, best_projection) / (N*N)
 
         # Add to the diffraction pattern and increment the frame counter
         self._diffraction += np.asarray(diffraction_frame)
@@ -271,6 +274,7 @@ cdef class DiffractionPattern(_Compute):
         # lazy evaluation of k-values and k-vectors
         self._box_matrix_scale_factor = np.max(system.box.to_matrix())
         self._view_orientation = view_orientation
+        self._zoom = zoom
         self._k_values_cached = False
         self._k_vectors_cached = False
 

@@ -58,7 +58,15 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # https://stackoverflow.com/questions/50600708/combining-cmake-object-libraries-with-shared-libraries
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 add_subdirectory(CMake)
+include(FindPackageMessage)
 find_package_config_first(TBB)
+if(TBB_FOUND)
+  get_target_property(_tbb_library TBB::tbb IMPORTED_LOCATION_RELEASE)
+  get_target_property(_tbb_include_dir TBB::tbb INTERFACE_INCLUDE_DIRECTORIES)
+  find_package_message(
+    tbb "Found TBB: ${TBB_DIR} ${_tbb_library} ${_tbb_include_dir}"
+    "[${_tbb_library}][${_tbb_include_dir}]")
+endif()
 
 # The TBB config doesn't define these variable, which we use later.
 if(NOT DEFINED TBB_INCLUDE_DIR OR NOT DEFINED TBB_LIBRARY)
