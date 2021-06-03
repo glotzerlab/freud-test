@@ -438,3 +438,13 @@ class TestLocalDescriptors:
                         "Failed for l={}, m={}, x={}, y = {}" "\ntheta={}, phi={}"
                     ).format(l, m, scipy_val, ld_val, theta, phi)
                     count += 1
+
+    def test_no_neighbors(self):
+        l_max = 8
+        box = freud.box.Box.cube(10)
+        points = [(0, 0, 0)]
+
+        ld = freud.environment.LocalDescriptors(l_max)
+        ld.compute((box, points), neighbors={"r_max": 1.25})
+        assert ld.num_sphs == 0
+        assert len(ld.sph) == 0

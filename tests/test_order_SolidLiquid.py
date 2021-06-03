@@ -1,4 +1,5 @@
 import matplotlib
+import numpy as np
 import numpy.testing as npt
 import pytest
 
@@ -95,3 +96,17 @@ class TestSolidLiquid:
     def test_repr(self):
         comp = freud.order.SolidLiquid(6, q_threshold=0.7, solid_threshold=6)
         assert str(comp) == str(eval(repr(comp)))
+
+    def test_no_neighbors(self):
+        """Ensure that particles without neighbors are assigned NaN"""
+        box = freud.box.Box.cube(10)
+        positions = [(0, 0, 0)]
+        comp = freud.order.SolidLiquid(6, q_threshold=0.7, solid_threshold=6)
+        comp.compute((box, positions), neighbors=dict(r_max=2.0))
+
+        npt.assert_equal(comp.cluster_idx, np.arange(len(comp.cluster_idx)))
+        npt.assert_equal(comp.cluster_sizes, np.ones_like(comp.cluster_sizes))
+        assert comp.largest_cluster_size == 1
+        npt.assert_equal(comp.num_connections, np.zeros_like(comp.cluster_sizes))
+        assert np.all(np.isnan(comp.particle_harmonics))
+        npt.assert_equal(comp.ql_ij, [])

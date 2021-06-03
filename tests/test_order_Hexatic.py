@@ -218,3 +218,13 @@ class TestHexatic:
         hop._repr_png_()
         hop.plot()
         plt.close("all")
+
+    def test_no_neighbors(self):
+        """Ensure that particles without neighbors are assigned NaN"""
+        box = freud.box.Box.square(10)
+        positions = [(0, 0, 0)]
+        hop = freud.order.Hexatic()
+        hop.compute((box, positions), neighbors={"r_max": 1.25})
+
+        assert np.all(np.isnan(hop.particle_order))
+        npt.assert_allclose(np.nan_to_num(hop.particle_order), 0)

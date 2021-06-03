@@ -37,7 +37,14 @@ void HexaticTranslational<T>::computeGeneral(Func func, const freud::locality::N
             }
             if (normalize_by_k)
             {
-                m_psi_array[i] /= std::complex<float>(m_k);
+                if (total_weight == 0.)
+                {
+                    m_psi_array[i] /= std::complex<float>(total_weight);
+                }
+                else
+                {
+                    m_psi_array[i] /= std::complex<float>(m_k);
+                }
             }
             else
             {
