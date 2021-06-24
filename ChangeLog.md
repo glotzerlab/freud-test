@@ -4,6 +4,11 @@ The format is based on
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## next -- 2021-xx-xx
+
+### Fixed
+* Doctests are now run with pytest.
+
 ## v2.6.1 -- 2021-06-23
 
 ### Fixed

@@ -116,8 +116,10 @@ Bradley Dice - **Lead developer**
 * Added scikit-build support for Windows.
 * Fixed 2D image calculations.
 * Optimized NeighborList ``filter`` method.
+* Switched testing framework to pytest.
 * Fixed documented formulas for ``Steinhardt`` class.
 * Fixed incorrect computation of ``Steinhardt`` averaged quantities.
+* Fixed doctests to run with pytest.
 
 Eric Harper, University of Michigan - **Former lead developer**
 
