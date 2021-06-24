@@ -128,13 +128,16 @@ cdef class DiffractionPattern(_Compute):
         best_projection_axis = np.argmax(projections)
         secondary_axes = np.array([
             best_projection_axis + 1, best_projection_axis + 2]) % 3
+        v1_proj = box_matrix.T[secondary_axes[0]]
+        v2_proj = box_matrix.T[secondary_axes[1]]
+
 
         # Figure out appropriate shear matrix
         shear = box_matrix[np.ix_([0, 1], secondary_axes)]
 
         # Return the inverse shear matrix
         inv_shear = np.linalg.inv(shear)
-        return inv_shear
+        return inv_shear, v1_proj, v2_proj
 
     def _transform(self, img, box, inv_shear, zoom):
         """Zoom, shear, and scale diffraction intensities.
@@ -223,6 +226,7 @@ cdef class DiffractionPattern(_Compute):
             self._frame_counter = 0
 
         system = freud.locality.NeighborQuery.from_system(system)
+        box = system.box
 
         if view_orientation is None:
             view_orientation = np.array([1., 0., 0., 0.])
@@ -230,18 +234,22 @@ cdef class DiffractionPattern(_Compute):
             view_orientation, (4,), np.double)
 
         # Compute the box projection matrix
-        inv_shear = self._calc_proj(view_orientation, system.box)
-
-        # Rotate points by the view quaternion and shear by the box projection
-        xy = rowan.rotate(view_orientation, system.points)[:, 0:2]
-        xy = xy @ inv_shear.T
+        inv_shear, v1_proj, v2_proj = self._calc_proj(view_orientation, system.box)
+        v1_proj_onto_x_axis = rowan.vector_vector_rotation(v1_proj, [1, 0, 0])
+        v1_proj = rowan.rotate(v1_proj_onto_x_axis, v1_proj)
+        v2_proj = rowan.rotate(v1_proj_onto_x_axis, v2_proj)
+        xy = rowan.rotate(view_orientation, system.points)
+        xy = rowan.rotate(v1_proj_onto_x_axis, xy)[:, 0:2]
+        new_box = freud.Box(Lx=v1_proj[0], Ly=v2_proj[1])
+        xy = new_box.wrap(xy)
 
         # Map positions to [0, 1] and compute a histogram "image"
         # Use grid_size+1 bin edges so that there are grid_size bins
-        xy += 0.5
-        xy %= 1
         im, _, _ = np.histogram2d(
-            xy[:, 0], xy[:, 1], bins=np.linspace(0, 1, self.grid_size+1))
+            xy[:, 0], xy[:, 1],
+            bins=[np.linspace(0, new_box.Lx, self.grid_size+1),
+                  np.linspace(0, new_box.Ly, self.grid_size+1)]
+        )
 
         # Compute FFT and convolve with Gaussian
         cdef double complex[:, :] diffraction_fft
@@ -257,8 +265,11 @@ cdef class DiffractionPattern(_Compute):
 
         # Transform the image (scale, shear, zoom) and normalize S(k) by N^2
         N = len(system.points)
+        diffraction_frame /= (N*N)
+        """
         diffraction_frame = self._transform(
             diffraction_frame, system.box, inv_shear, zoom) / (N*N)
+        """
 
         # Add to the diffraction pattern and increment the frame counter
         self._diffraction += np.asarray(diffraction_frame)
