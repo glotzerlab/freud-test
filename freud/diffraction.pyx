@@ -235,12 +235,21 @@ cdef class DiffractionPattern(_Compute):
 
         # Compute the box projection matrix
         inv_shear, v1_proj, v2_proj = self._calc_proj(view_orientation, system.box)
+        if np.dot(np.cross(v1_proj, v2_proj), [0, 0, 1]) > 0:
+            swap = True
+            v2_proj, v1_proj = v1_proj, v2_proj
+        else:
+            swap = False
+            v1_proj, v2_proj = v1_proj, v2_proj
+
         v1_proj_onto_x_axis = rowan.vector_vector_rotation(v1_proj, [1, 0, 0])
         v1_proj = rowan.rotate(v1_proj_onto_x_axis, v1_proj)
         v2_proj = rowan.rotate(v1_proj_onto_x_axis, v2_proj)
         xy = rowan.rotate(view_orientation, system.points)
-        xy = rowan.rotate(v1_proj_onto_x_axis, xy)[:, 0:2]
+        xy = rowan.rotate(v1_proj_onto_x_axis, xy)
+        xy[:, 2] = 0.0
         new_box = freud.Box(Lx=v1_proj[0], Ly=v2_proj[1])
+        print(new_box)
         xy = new_box.wrap(xy)
 
         # Map positions to [0, 1] and compute a histogram "image"
@@ -265,7 +274,7 @@ cdef class DiffractionPattern(_Compute):
 
         # Transform the image (scale, shear, zoom) and normalize S(k) by N^2
         N = len(system.points)
-        diffraction_frame /= (N*N)
+        diffraction_frame.base[:] /= (N*N)
         """
         diffraction_frame = self._transform(
             diffraction_frame, system.box, inv_shear, zoom) / (N*N)
@@ -275,22 +284,25 @@ cdef class DiffractionPattern(_Compute):
         self._diffraction += np.asarray(diffraction_frame)
         self._frame_counter += 1
 
+        # compute k vector
+        # the x and y components are independent of each other
+        kxs = np.fft.fftshift(np.fft.fftfreq(n=self.output_size, d=new_box.Lx/(2*np.pi*self.grid_size)))
+        kys = np.fft.fftshift(np.fft.fftfreq(n=self.output_size, d=new_box.Ly/(2*np.pi*self.grid_size)))
+        k_vectors = np.asarray(np.meshgrid(kxs, kys, [0])).T[0] / zoom
+        k_values = np.linalg.norm(k_vectors, axis=2)
+
         # Compute a cached array of k-vectors that can be rotated and scaled
         if not self._called_compute:
             # Create a 1D axis of k-vector magnitudes
-            self._k_values_orig = np.fft.fftshift(np.fft.fftfreq(
-                n=self.output_size))
 
             # Create a 3D meshgrid of k-vectors with shape
             # (output_size, output_size, 3)
-            self._k_vectors_orig = np.asarray(np.meshgrid(
-                self._k_values_orig, self._k_values_orig, [0])).T[0]
+            self._k_vectors_orig = k_vectors
+            self._k_vectors = k_vectors
 
         # Cache the view orientation and box matrix scale factor for
         # lazy evaluation of k-values and k-vectors
-        self._box_matrix_scale_factor = np.max(system.box.to_matrix())
         self._view_orientation = view_orientation
-        self._k_scale_factor = 2 * np.pi * self.output_size / (self._box_matrix_scale_factor * zoom)
         self._k_values_cached = False
         self._k_vectors_cached = False
 
@@ -317,9 +329,11 @@ cdef class DiffractionPattern(_Compute):
     @_Compute._computed_property
     def k_values(self):
         """(``output_size``, ) :class:`numpy.ndarray`: k-values."""
+        """
         if not self._k_values_cached:
             self._k_values = np.asarray(self._k_values_orig) * self._k_scale_factor
             self._k_values_cached = True
+        """
         return np.asarray(self._k_values)
 
     @_Compute._computed_property
@@ -328,11 +342,13 @@ cdef class DiffractionPattern(_Compute):
         (``output_size``, ``output_size``, 3) :class:`numpy.ndarray`:
             k-vectors.
         """
+        """
         if not self._k_vectors_cached:
             self._k_vectors = rowan.rotate(
                 self._view_orientation,
-                self._k_vectors_orig) * self._k_scale_factor
+                self._k_vectors_orig)
             self._k_vectors_cached = True
+        """
         return np.asarray(self._k_vectors)
 
     def __repr__(self):
@@ -383,7 +399,7 @@ cdef class DiffractionPattern(_Compute):
         """
         import freud.plot
         return freud.plot.diffraction_plot(
-            self.diffraction, self.k_values, ax, cmap, vmin, vmax)
+            self.diffraction, self.k_vectors, ax, cmap, vmin, vmax)
 
     def _repr_png_(self):
         try:

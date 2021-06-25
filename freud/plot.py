@@ -495,7 +495,7 @@ def voronoi_plot(box, polytopes, ax=None, color_by_sides=True, cmap=None):
 
 
 def diffraction_plot(
-    diffraction, k_values, ax=None, cmap="afmhot", vmin=4e-6, vmax=0.7
+    diffraction, k_vectors, ax=None, cmap="afmhot", vmin=4e-6, vmax=0.7
 ):
     """Helper function to plot diffraction pattern.
 
@@ -527,7 +527,9 @@ def diffraction_plot(
 
     # Plot the diffraction image and color bar
     norm = matplotlib.colors.LogNorm(vmin=vmin, vmax=vmax)
-    extent = (np.min(k_values), np.max(k_values), np.min(k_values), np.max(k_values))
+    extent = (
+            np.min(k_vectors[:, :, 0]), np.max(k_vectors[:, :, 0]),
+            np.min(k_vectors[:, :, 1]), np.max(k_vectors[:, :, 1]))
     im = ax.imshow(
         np.clip(diffraction, vmin, vmax),
         interpolation="nearest",
