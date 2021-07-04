@@ -169,7 +169,7 @@ cdef class DiffractionPattern(_Compute):
             roll_shift -= 0.5 / zoom
 
         box_matrix = box.to_matrix()
-        ss = np.max(box_matrix) * inv_shear
+        ss = np.max(box_matrix[:, 0:2]) * inv_shear
 
         shift_matrix = np.array(
             [[1, 0, -roll],
@@ -217,6 +217,23 @@ cdef class DiffractionPattern(_Compute):
                 Whether to erase the previously computed values before adding
                 the new computations; if False, will accumulate data (Default
                 value: True).
+
+        For a target view axis in Cartesian coordinates, `rowan
+        <https://rowan.readthedocs.io/en/latest/index.html>`__ provides
+        :py:func:`rowan.vector_vector_rotation`, a function that will return
+        the necessary quaternion for rotating the default view orientation to
+        the desired axis.
+
+        Example::
+
+            >>> import rowan
+            >>> import numpy as np
+            >>> default_view_axis = np.array([0, 0, 1])
+            >>> desired_view_axis = np.array([1, 1, 1])
+            >>> view_orientation = rowan.vector_vector_rotation(
+            ...     default_view_axis, desired_view_axis
+            ... )
+
         """
         if reset:
             self._diffraction = np.zeros((self.output_size, self.output_size))
@@ -277,7 +294,9 @@ cdef class DiffractionPattern(_Compute):
 
         # Cache the view orientation and box matrix scale factor for
         # lazy evaluation of k-values and k-vectors
-        self._box_matrix_scale_factor = np.max(system.box.to_matrix())
+        self._box_matrix_scale_factor = np.max(
+            rowan.rotate(view_orientation, system.box.to_matrix())[:, 0:2]
+        )
         self._view_orientation = view_orientation
         self._k_scale_factor = 2 * np.pi * self.output_size / (self._box_matrix_scale_factor * zoom)
         self._k_values_cached = False

@@ -282,3 +282,54 @@ class TestDiffractionPattern:
                                 ideal_peaks[peak] = True
 
                     assert all(ideal_peaks.values())
+
+    def test_system_long_and_short_in_view_direction(self):
+        # Same as above tests, but with unit cell lengthed
+        # and shortened in the direction parallel to the view axis.
+        # This should produce a diffraction pattern identical to the
+        # simple cubic case.
+
+        dp = freud.diffraction.DiffractionPattern(grid_size=512)
+
+        for Lz in [0.5, 2, 3.456]:
+            Lx, Ly = 1, 1
+            cell = freud.box.Box(Lx=Lx, Ly=Ly, Lz=Lz)
+            box, points = freud.data.UnitCell(cell).generate_system(
+                num_replicas=16, scale=1, sigma_noise=0.1
+            )
+
+            dp.compute((box, points), zoom=2, view_orientation=None)
+
+            threshold = 0.2
+            xs, ys = np.nonzero(dp.diffraction > threshold)
+            xy = np.dstack((xs, ys))[0]
+
+            ideal_peaks = {i: False for i in [-2, -1, 0, 1, 2]}
+
+            lattice_vector = np.array([Lx, Ly, Lz])
+            for peak in ideal_peaks:
+                for x, y in xy:
+                    k_vector = dp.k_vectors[x, y]
+                    dot_prod = np.dot(k_vector, lattice_vector)
+
+                    if np.isclose(dot_prod, peak * 2 * np.pi, atol=1e-2):
+                        ideal_peaks[peak] = True
+
+            assert all(ideal_peaks.values())
+
+    def test_unique_box_vector_lengths(self):
+        # TODO: k-values, k-vectors and peaks should be
+        # correct for various boxes with unique side lengths.
+        # Testing w/ variations of other parameters is also possible.
+        pass
+
+    def test_rotated_system(self):
+        # TODO: Same as above, but for boxes that are rotated
+        # such that no face normal vector aligns with the view axis.
+        pass
+
+    def test_multiple_faces_project_equally(self):
+        # TODO: Special case of above, test configurations where two
+        # or three box face normal vectors project equally onto
+        # the view axis.
+        pass

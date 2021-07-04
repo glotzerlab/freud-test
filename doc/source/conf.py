@@ -320,6 +320,7 @@ intersphinx_mapping = {
     "MDAnalysis": ("https://docs.mdanalysis.org/stable", None),
     "ovito": ("https://www.ovito.org/docs/current/python/", None),
     "pytest": ("https://docs.pytest.org/en/stable", None),
+    "rowan": ("https://rowan.readthedocs.io/en/stable/", None),
 }
 
 autodoc_default_options = {
