@@ -35,7 +35,7 @@ public:
     NeighborList(const NeighborList& other);
     //! Construct from arrays
     NeighborList(unsigned int num_bonds, const unsigned int* query_point_index, unsigned int num_query_points,
-                 const unsigned int* point_index, unsigned int num_points, const float* distances,
+                 const unsigned int* point_index, unsigned int num_points, const vec3<float>* vectors,
                  const float* weights);
 
     //! Return the number of bonds stored in this NeighborList
@@ -65,13 +65,18 @@ public:
     {
         return m_weights;
     }
-    //! Access the counts array for reading
+    //! Access the vectors array for reading and writing
+    util::ManagedArray<vec3<float>>& getVectors()
+    {
+        return m_vectors;
+    }
+    //! Access the counts array for reading and writing
     util::ManagedArray<unsigned int>& getCounts()
     {
         updateSegmentCounts();
         return m_counts;
     }
-    //! Access the segments array for reading
+    //! Access the segments array for reading and writing
     util::ManagedArray<unsigned int>& getSegments()
     {
         updateSegmentCounts();
@@ -92,6 +97,11 @@ public:
     const util::ManagedArray<float>& getWeights() const
     {
         return m_weights;
+    }
+    //! Access the vectors array for reading
+    const util::ManagedArray<vec3<float>>& getVectors() const
+    {
+        return m_vectors;
     }
     //! Access the counts array for reading
     const util::ManagedArray<unsigned int>& getCounts() const
@@ -140,6 +150,8 @@ private:
     util::ManagedArray<float> m_distances;
     //! Neighbor list per-bond weight array
     util::ManagedArray<float> m_weights;
+    //!< Directed vectors per-bond array
+    util::ManagedArray<vec3<float>> m_vectors;
 
     //! Track whether segments and counts are up to date
     mutable bool m_segments_counts_updated;

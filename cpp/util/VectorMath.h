@@ -32,16 +32,16 @@ template<class Real> struct vec3
         \param _y y-component
         \param _z z-component
     */
-    vec3(const Real& _x, const Real& _y, const Real& _z) : x(_x), y(_y), z(_z) {}
+    constexpr vec3(const Real& _x, const Real& _y, const Real& _z) : x(_x), y(_y), z(_z) {}
 
     //! Implicit cast from vec3<double> to the current Real
-    vec3(const vec3<double>& a) : x(a.x), y(a.y), z(a.z) {}
+    constexpr vec3(const vec3<double>& a) : x(a.x), y(a.y), z(a.z) {}
 
     //! Implicit cast from vec3<float> to the current Real
-    vec3(const vec3<float>& a) : x(a.x), y(a.y), z(a.z) {}
+    constexpr vec3(const vec3<float>& a) : x(a.x), y(a.y), z(a.z) {}
 
     //! Default construct a 0 vector
-    vec3() = default;
+    constexpr vec3() = default;
 
     //! Swap with another vector
     void swap(vec3<Real>& v)
@@ -63,7 +63,7 @@ template<class Real> struct vec3
     Addition is component wise.
     \returns The vector (a.x+b.x, a.y+b.y, a.z+b.z).
 */
-template<class Real> inline vec3<Real> operator+(const vec3<Real>& a, const vec3<Real>& b)
+template<class Real> constexpr vec3<Real> operator+(const vec3<Real>& a, const vec3<Real>& b)
 {
     return vec3<Real>(a.x + b.x, a.y + b.y, a.z + b.z);
 }
@@ -75,7 +75,7 @@ template<class Real> inline vec3<Real> operator+(const vec3<Real>& a, const vec3
     Subtraction is component wise.
     \returns The vector (a.x-b.x, a.y-b.y, a.z-b.z).
 */
-template<class Real> inline vec3<Real> operator-(const vec3<Real>& a, const vec3<Real>& b)
+template<class Real> constexpr vec3<Real> operator-(const vec3<Real>& a, const vec3<Real>& b)
 {
     return vec3<Real>(a.x - b.x, a.y - b.y, a.z - b.z);
 }
@@ -87,7 +87,7 @@ template<class Real> inline vec3<Real> operator-(const vec3<Real>& a, const vec3
     Multiplication is component wise.
     \returns The vector (a.x*b.x, a.y*b.y, a.z*b.z).
 */
-template<class Real> inline vec3<Real> operator*(const vec3<Real>& a, const vec3<Real>& b)
+template<class Real> constexpr vec3<Real> operator*(const vec3<Real>& a, const vec3<Real>& b)
 {
     return vec3<Real>(a.x * b.x, a.y * b.y, a.z * b.z);
 }
@@ -99,7 +99,7 @@ template<class Real> inline vec3<Real> operator*(const vec3<Real>& a, const vec3
     Division is component wise.
     \returns The vector (a.x/b.x, a.y/b.y, a.z/b.z).
 */
-template<class Real> inline vec3<Real> operator/(const vec3<Real>& a, const vec3<Real>& b)
+template<class Real> constexpr vec3<Real> operator/(const vec3<Real>& a, const vec3<Real>& b)
 {
     return vec3<Real>(a.x / b.x, a.y / b.y, a.z / b.z);
 }
@@ -110,7 +110,7 @@ template<class Real> inline vec3<Real> operator/(const vec3<Real>& a, const vec3
     Negation is component wise.
     \returns The vector (-a.x, -a.y, -a.z).
 */
-template<class Real> inline vec3<Real> operator-(const vec3<Real>& a)
+template<class Real> constexpr vec3<Real> operator-(const vec3<Real>& a)
 {
     return vec3<Real>(-a.x, -a.y, -a.z);
 }
@@ -122,7 +122,7 @@ template<class Real> inline vec3<Real> operator-(const vec3<Real>& a)
     Addition is component wise.
     \returns The vector (a.x += b.x, a.y += b.y, a.z += b.z).
 */
-template<class Real> inline vec3<Real>& operator+=(vec3<Real>& a, const vec3<Real>& b)
+template<class Real> constexpr vec3<Real>& operator+=(vec3<Real>& a, const vec3<Real>& b)
 {
     a.x += b.x;
     a.y += b.y;
@@ -137,7 +137,7 @@ template<class Real> inline vec3<Real>& operator+=(vec3<Real>& a, const vec3<Rea
     Subtraction is component wise.
     \returns The vector (a.x -= b.x, a.y -= b.y, a.z -= b.z).
 */
-template<class Real> inline vec3<Real>& operator-=(vec3<Real>& a, const vec3<Real>& b)
+template<class Real> constexpr vec3<Real>& operator-=(vec3<Real>& a, const vec3<Real>& b)
 {
     a.x -= b.x;
     a.y -= b.y;
@@ -152,7 +152,7 @@ template<class Real> inline vec3<Real>& operator-=(vec3<Real>& a, const vec3<Rea
     Multiplication is component wise.
     \returns The vector (a.x *= b.x, a.y *= b.y, a.z *= b.z).
 */
-template<class Real> inline vec3<Real>& operator*=(vec3<Real>& a, const vec3<Real>& b)
+template<class Real> constexpr vec3<Real>& operator*=(vec3<Real>& a, const vec3<Real>& b)
 {
     a.x *= b.x;
     a.y *= b.y;
@@ -167,7 +167,7 @@ template<class Real> inline vec3<Real>& operator*=(vec3<Real>& a, const vec3<Rea
     Division is component wise.
     \returns The vector (a.x /= b.x, a.y /= b.y, a.z /= b.z).
 */
-template<class Real> inline vec3<Real>& operator/=(vec3<Real>& a, const vec3<Real>& b)
+template<class Real> constexpr vec3<Real>& operator/=(vec3<Real>& a, const vec3<Real>& b)
 {
     a.x /= b.x;
     a.y /= b.y;
@@ -182,7 +182,7 @@ template<class Real> inline vec3<Real>& operator/=(vec3<Real>& a, const vec3<Rea
     Multiplication is component wise.
     \returns The vector (a.x*b, a.y*b, a.z*b).
 */
-template<class Real> inline vec3<Real> operator*(const vec3<Real>& a, const Real& b)
+template<class Real> constexpr vec3<Real> operator*(const vec3<Real>& a, const Real& b)
 {
     return vec3<Real>(a.x * b, a.y * b, a.z * b);
 }
@@ -194,7 +194,7 @@ template<class Real> inline vec3<Real> operator*(const vec3<Real>& a, const Real
     Multiplication is component wise.
     \returns The vector (a.x*b, a.y*b, a.z*b).
 */
-template<class Real> inline vec3<Real> operator*(const Real& b, const vec3<Real>& a)
+template<class Real> constexpr vec3<Real> operator*(const Real& b, const vec3<Real>& a)
 {
     return vec3<Real>(a.x * b, a.y * b, a.z * b);
 }
@@ -206,7 +206,7 @@ template<class Real> inline vec3<Real> operator*(const Real& b, const vec3<Real>
     Division is component wise.
     \returns The vector (a.x/b, a.y/b, a.z/b).
 */
-template<class Real> inline vec3<Real> operator/(const vec3<Real>& a, const Real& b)
+template<class Real> constexpr vec3<Real> operator/(const vec3<Real>& a, const Real& b)
 {
     Real q = Real(1.0) / b;
     return a * q;
@@ -219,7 +219,7 @@ template<class Real> inline vec3<Real> operator/(const vec3<Real>& a, const Real
     Multiplication is component wise.
     \returns The vector (a.x *= b, a.y *= b, a.z *= b).
 */
-template<class Real> inline vec3<Real>& operator*=(vec3<Real>& a, const Real& b)
+template<class Real> constexpr vec3<Real>& operator*=(vec3<Real>& a, const Real& b)
 {
     a.x *= b;
     a.y *= b;
@@ -234,7 +234,7 @@ template<class Real> inline vec3<Real>& operator*=(vec3<Real>& a, const Real& b)
     Division is component wise.
     \returns The vector (a.x /= b, a.y /= b, a.z /= b).
 */
-template<class Real> inline vec3<Real>& operator/=(vec3<Real>& a, const Real& b)
+template<class Real> constexpr vec3<Real>& operator/=(vec3<Real>& a, const Real& b)
 {
     a.x /= b;
     a.y /= b;
@@ -247,7 +247,7 @@ template<class Real> inline vec3<Real>& operator/=(vec3<Real>& a, const Real& b)
     \param b Second vector
     \returns true if the two vectors are identically equal, false if they are not
 */
-template<class Real> inline bool operator==(const vec3<Real>& a, const vec3<Real>& b)
+template<class Real> constexpr bool operator==(const vec3<Real>& a, const vec3<Real>& b)
 {
     return (a.x == b.x) && (a.y == b.y) && (a.z == b.z);
 }
@@ -257,7 +257,7 @@ template<class Real> inline bool operator==(const vec3<Real>& a, const vec3<Real
     \param b Second vector
     \returns true if the two vectors are not identically equal, and false if they are
 */
-template<class Real> inline bool operator!=(const vec3<Real>& a, const vec3<Real>& b)
+template<class Real> constexpr bool operator!=(const vec3<Real>& a, const vec3<Real>& b)
 {
     return (a.x != b.x) || (a.y != b.y) || (a.z != b.z);
 }
@@ -268,7 +268,7 @@ template<class Real> inline bool operator!=(const vec3<Real>& a, const vec3<Real
 
     \returns the dot product a.x*b.x + a.y*b.y + a.z*b.z.
 */
-template<class Real> inline Real dot(const vec3<Real>& a, const vec3<Real>& b)
+template<class Real> constexpr Real dot(const vec3<Real>& a, const vec3<Real>& b)
 {
     return (a.x * b.x + a.y * b.y + a.z * b.z);
 }
@@ -279,7 +279,7 @@ template<class Real> inline Real dot(const vec3<Real>& a, const vec3<Real>& b)
 
     \returns the cross product (a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x).
 */
-template<class Real> inline vec3<Real> cross(const vec3<Real>& a, const vec3<Real>& b)
+template<class Real> constexpr vec3<Real> cross(const vec3<Real>& a, const vec3<Real>& b)
 {
     return vec3<Real>(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
 }
@@ -303,16 +303,16 @@ template<class Real> struct vec2
     /*! \param _x x-component
         \param _y y-component
     */
-    vec2(const Real& _x, const Real& _y) : x(_x), y(_y) {}
+    constexpr vec2(const Real& _x, const Real& _y) : x(_x), y(_y) {}
 
     //! Default construct a 0 vector
-    vec2() : x(0), y(0) {}
+    constexpr vec2() : x(0), y(0) {}
 
     //! Implicit cast from vec2<double> to the current Real
-    vec2(const vec2<double>& a) : x(a.x), y(a.y) {}
+    constexpr vec2(const vec2<double>& a) : x(a.x), y(a.y) {}
 
     //! Implicit cast from vec2<float> to the current Real
-    vec2(const vec2<float>& a) : x(a.x), y(a.y) {}
+    constexpr vec2(const vec2<float>& a) : x(a.x), y(a.y) {}
 
     //! Swap with another vector
     void swap(vec2<Real>& v)
@@ -338,7 +338,7 @@ template<class Real> struct vec2
     Addition is component wise.
     \returns The vector (a.x+b.x, a.y+b.y).
 */
-template<class Real> inline vec2<Real> operator+(const vec2<Real>& a, const vec2<Real>& b)
+template<class Real> constexpr vec2<Real> operator+(const vec2<Real>& a, const vec2<Real>& b)
 {
     return vec2<Real>(a.x + b.x, a.y + b.y);
 }
@@ -350,7 +350,7 @@ template<class Real> inline vec2<Real> operator+(const vec2<Real>& a, const vec2
     Subtraction is component wise.
     \returns The vector (a.x-b.x, a.y-b.y).
 */
-template<class Real> inline vec2<Real> operator-(const vec2<Real>& a, const vec2<Real>& b)
+template<class Real> constexpr vec2<Real> operator-(const vec2<Real>& a, const vec2<Real>& b)
 {
     return vec2<Real>(a.x - b.x, a.y - b.y);
 }
@@ -362,7 +362,7 @@ template<class Real> inline vec2<Real> operator-(const vec2<Real>& a, const vec2
     Multiplication is component wise.
     \returns The vector (a.x*b.x, a.y*b.y).
 */
-template<class Real> inline vec2<Real> operator*(const vec2<Real>& a, const vec2<Real>& b)
+template<class Real> constexpr vec2<Real> operator*(const vec2<Real>& a, const vec2<Real>& b)
 {
     return vec2<Real>(a.x * b.x, a.y * b.y);
 }
@@ -374,7 +374,7 @@ template<class Real> inline vec2<Real> operator*(const vec2<Real>& a, const vec2
     Division is component wise.
     \returns The vector (a.x/b.x, a.y/b.y).
 */
-template<class Real> inline vec2<Real> operator/(const vec2<Real>& a, const vec2<Real>& b)
+template<class Real> constexpr vec2<Real> operator/(const vec2<Real>& a, const vec2<Real>& b)
 {
     return vec2<Real>(a.x / b.x, a.y / b.y);
 }
@@ -385,7 +385,7 @@ template<class Real> inline vec2<Real> operator/(const vec2<Real>& a, const vec2
     Negation is component wise.
     \returns The vector (-a.x, -a.y).
 */
-template<class Real> inline vec2<Real> operator-(const vec2<Real>& a)
+template<class Real> constexpr vec2<Real> operator-(const vec2<Real>& a)
 {
     return vec2<Real>(-a.x, -a.y);
 }
@@ -397,7 +397,7 @@ template<class Real> inline vec2<Real> operator-(const vec2<Real>& a)
     Addition is component wise.
     \returns The vector (a.x += b.x, a.y += b.y).
 */
-template<class Real> inline vec2<Real>& operator+=(vec2<Real>& a, const vec2<Real>& b)
+template<class Real> constexpr vec2<Real>& operator+=(vec2<Real>& a, const vec2<Real>& b)
 {
     a.x += b.x;
     a.y += b.y;
@@ -411,7 +411,7 @@ template<class Real> inline vec2<Real>& operator+=(vec2<Real>& a, const vec2<Rea
     Subtraction is component wise.
     \returns The vector (a.x -= b.x, a.y -= b.y).
 */
-template<class Real> inline vec2<Real>& operator-=(vec2<Real>& a, const vec2<Real>& b)
+template<class Real> constexpr vec2<Real>& operator-=(vec2<Real>& a, const vec2<Real>& b)
 {
     a.x -= b.x;
     a.y -= b.y;
@@ -425,7 +425,7 @@ template<class Real> inline vec2<Real>& operator-=(vec2<Real>& a, const vec2<Rea
     Multiplication is component wise.
     \returns The vector (a.x *= b.x, a.y *= b.y).
 */
-template<class Real> inline vec2<Real>& operator*=(vec2<Real>& a, const vec2<Real>& b)
+template<class Real> constexpr vec2<Real>& operator*=(vec2<Real>& a, const vec2<Real>& b)
 {
     a.x *= b.x;
     a.y *= b.y;
@@ -439,7 +439,7 @@ template<class Real> inline vec2<Real>& operator*=(vec2<Real>& a, const vec2<Rea
     Division is component wise.
     \returns The vector (a.x /= b.x, a.y /= b.y).
 */
-template<class Real> inline vec2<Real>& operator/=(vec2<Real>& a, const vec2<Real>& b)
+template<class Real> constexpr vec2<Real>& operator/=(vec2<Real>& a, const vec2<Real>& b)
 {
     a.x /= b.x;
     a.y /= b.y;
@@ -453,7 +453,7 @@ template<class Real> inline vec2<Real>& operator/=(vec2<Real>& a, const vec2<Rea
     Multiplication is component wise.
     \returns The vector (a.x*b, a.y*b).
 */
-template<class Real> inline vec2<Real> operator*(const vec2<Real>& a, const Real& b)
+template<class Real> constexpr vec2<Real> operator*(const vec2<Real>& a, const Real& b)
 {
     return vec2<Real>(a.x * b, a.y * b);
 }
@@ -465,7 +465,7 @@ template<class Real> inline vec2<Real> operator*(const vec2<Real>& a, const Real
     Multiplication is component wise.
     \returns The vector (a.x*b, a.y*b).
 */
-template<class Real> inline vec2<Real> operator*(const Real& b, const vec2<Real>& a)
+template<class Real> constexpr vec2<Real> operator*(const Real& b, const vec2<Real>& a)
 {
     return vec2<Real>(a.x * b, a.y * b);
 }
@@ -477,7 +477,7 @@ template<class Real> inline vec2<Real> operator*(const Real& b, const vec2<Real>
     Division is component wise.
     \returns The vector (a.x/b, a.y/b, a.z/b).
 */
-template<class Real> inline vec2<Real> operator/(const vec2<Real>& a, const Real& b)
+template<class Real> constexpr vec2<Real> operator/(const vec2<Real>& a, const Real& b)
 {
     Real q = Real(1.0) / b;
     return a * q;
@@ -490,7 +490,7 @@ template<class Real> inline vec2<Real> operator/(const vec2<Real>& a, const Real
     Multiplication is component wise.
     \returns The vector (a.x *= b, a.y *= b).
 */
-template<class Real> inline vec2<Real>& operator*=(vec2<Real>& a, const Real& b)
+template<class Real> constexpr vec2<Real>& operator*=(vec2<Real>& a, const Real& b)
 {
     a.x *= b;
     a.y *= b;
@@ -504,7 +504,7 @@ template<class Real> inline vec2<Real>& operator*=(vec2<Real>& a, const Real& b)
     Division is component wise.
     \returns The vector (a.x /= b, a.y /= b).
 */
-template<class Real> inline vec2<Real>& operator/=(vec2<Real>& a, const Real& b)
+template<class Real> constexpr vec2<Real>& operator/=(vec2<Real>& a, const Real& b)
 {
     a.x /= b;
     a.y /= b;
@@ -516,7 +516,7 @@ template<class Real> inline vec2<Real>& operator/=(vec2<Real>& a, const Real& b)
     \param b Second vector
     \returns true if the two vectors are identically equal, false if they are not
 */
-template<class Real> inline bool operator==(const vec2<Real>& a, const vec2<Real>& b)
+template<class Real> constexpr bool operator==(const vec2<Real>& a, const vec2<Real>& b)
 {
     return (a.x == b.x) && (a.y == b.y);
 }
@@ -526,7 +526,7 @@ template<class Real> inline bool operator==(const vec2<Real>& a, const vec2<Real
     \param b Second vector
     \returns true if the two vectors are not identically equal, false if they are
 */
-template<class Real> inline bool operator!=(const vec2<Real>& a, const vec2<Real>& b)
+template<class Real> constexpr bool operator!=(const vec2<Real>& a, const vec2<Real>& b)
 {
     return (a.x != b.x) || (a.y != b.y);
 }
@@ -537,7 +537,7 @@ template<class Real> inline bool operator!=(const vec2<Real>& a, const vec2<Real
 
     \returns the dot product a.x*b.x + a.y*b.y.
 */
-template<class Real> inline Real dot(const vec2<Real>& a, const vec2<Real>& b)
+template<class Real> constexpr Real dot(const vec2<Real>& a, const vec2<Real>& b)
 {
     return (a.x * b.x + a.y * b.y);
 }
@@ -546,7 +546,7 @@ template<class Real> inline Real dot(const vec2<Real>& a, const vec2<Real>& b)
 /*! \param a vector
     \returns a vector perpendicular to *a* (a.y, -a.x)
 */
-template<class Real> inline vec2<Real> perp(const vec2<Real>& a)
+template<class Real> constexpr vec2<Real> perp(const vec2<Real>& a)
 {
     return vec2<Real>(-a.y, a.x);
 }
@@ -556,7 +556,7 @@ template<class Real> inline vec2<Real> perp(const vec2<Real>& a)
     \param b second vector
     \returns the perpendicular dot product of a and b
 */
-template<class Real> inline Real perpdot(const vec2<Real>& a, const vec2<Real>& b)
+template<class Real> constexpr Real perpdot(const vec2<Real>& a, const vec2<Real>& b)
 {
     return dot(perp(a), b);
 }
@@ -598,19 +598,19 @@ template<class Real> struct quat
     /*! \param _s scalar component
         \param _v vector component
     */
-    quat(const Real& _s, const vec3<Real>& _v) : s(_s), v(_v) {}
+    constexpr quat(const Real& _s, const vec3<Real>& _v) : s(_s), v(_v) {}
 
     //! Implicit cast from quat<double> to the current Real
-    quat(const quat<double>& a) : s(a.s), v(a.v) {}
+    constexpr quat(const quat<double>& a) : s(a.s), v(a.v) {}
 
     //! Implicit cast from quat<float> to the current Real
-    quat(const quat<float>& a) : s(a.s), v(a.v) {}
+    constexpr quat(const quat<float>& a) : s(a.s), v(a.v) {}
 
     //! Default construct a unit quaternion
-    quat() : s(1), v(vec3<Real>(0, 0, 0)) {}
+    constexpr quat() : s(1), v(vec3<Real>(0, 0, 0)) {}
 
     //! Construct a quaternion from a rotation matrix
-    explicit quat(const rotmat3<Real>& r);
+    constexpr explicit quat(const rotmat3<Real>& r);
 
     //! Construct a quat from an axis and an angle.
     /*! \param axis angle to represent
@@ -636,7 +636,7 @@ template<class Real> struct quat
     Multiplication is component wise.
     \returns The quaternion (b*a.s, b*a.v).
 */
-template<class Real> inline quat<Real> operator*(const Real& b, const quat<Real>& a)
+template<class Real> constexpr quat<Real> operator*(const Real& b, const quat<Real>& a)
 {
     return quat<Real>(b * a.s, b * a.v);
 }
@@ -648,7 +648,7 @@ template<class Real> inline quat<Real> operator*(const Real& b, const quat<Real>
     Multiplication is component wise.
     \returns The quaternion (a.s*b, a.v*b).
 */
-template<class Real> inline quat<Real> operator*(const quat<Real>& a, const Real& b)
+template<class Real> constexpr quat<Real> operator*(const quat<Real>& a, const Real& b)
 {
     return quat<Real>(a.s * b, a.v * b);
 }
@@ -660,7 +660,7 @@ template<class Real> inline quat<Real> operator*(const quat<Real>& a, const Real
     Addition is component wise.
     \returns The quaternion (a.s + b.s, a.v+b.v).
 */
-template<class Real> inline quat<Real> operator+(const quat<Real>& a, const quat<Real>& b)
+template<class Real> constexpr quat<Real> operator+(const quat<Real>& a, const quat<Real>& b)
 {
     return quat<Real>(a.s + b.s, a.v + b.v);
 }
@@ -672,7 +672,7 @@ template<class Real> inline quat<Real> operator+(const quat<Real>& a, const quat
     Addition is component wise.
     \returns The quaternion (a.s += b.s, a.v += b.v).
 */
-template<class Real> inline quat<Real>& operator+=(quat<Real>& a, const quat<Real>& b)
+template<class Real> constexpr quat<Real>& operator+=(quat<Real>& a, const quat<Real>& b)
 {
     a.s += b.s;
     a.v += b.v;
@@ -686,7 +686,7 @@ template<class Real> inline quat<Real>& operator+=(quat<Real>& a, const quat<Rea
     Subtraction is component wise.
     \returns The quaternion (a.s - b.s, a.v - b.v).
 */
-template<class Real> inline quat<Real> operator-(const quat<Real>& a, const quat<Real>& b)
+template<class Real> constexpr quat<Real> operator-(const quat<Real>& a, const quat<Real>& b)
 {
     return quat<Real>(a.s - b.s, a.v - b.v);
 }
@@ -698,7 +698,7 @@ template<class Real> inline quat<Real> operator-(const quat<Real>& a, const quat
     Subtraction is component wise.
     \returns The quaternion (a.s -= b.s, a.v -= b.v).
 */
-template<class Real> inline quat<Real>& operator-=(quat<Real>& a, const quat<Real>& b)
+template<class Real> constexpr quat<Real>& operator-=(quat<Real>& a, const quat<Real>& b)
 {
     a.s -= b.s;
     a.v -= b.v;
@@ -717,7 +717,7 @@ template<class Real> inline quat<Real>& operator-=(quat<Real>& a, const quat<Rea
     \returns The quaternion
     (a.s * b.s − dot(a.v, b.v), a.s*b.v + b.s * a.v + cross(a.v, b.v)).
 */
-template<class Real> inline quat<Real> operator*(const quat<Real>& a, const quat<Real>& b)
+template<class Real> constexpr quat<Real> operator*(const quat<Real>& a, const quat<Real>& b)
 {
     return quat<Real>(a.s * b.s - dot(a.v, b.v), a.s * b.v + b.s * a.v + cross(a.v, b.v));
 }
@@ -730,7 +730,7 @@ template<class Real> inline quat<Real> operator*(const quat<Real>& a, const quat
 
     \returns The quaternion (a.s * b.s − dot(a.v, b.v), a.s*b.v + b.s * a.v + cross(a.v, b.v)).
 */
-template<class Real> inline quat<Real> operator*(const vec3<Real>& a, const quat<Real>& b)
+template<class Real> constexpr quat<Real> operator*(const vec3<Real>& a, const quat<Real>& b)
 {
     return quat<Real>(0, a) * b;
 }
@@ -743,7 +743,7 @@ template<class Real> inline quat<Real> operator*(const vec3<Real>& a, const quat
 
     \returns The quaternion (a.s * b.s − dot(a.v, b.v), a.s*b.v + b.s * a.v + cross(a.v, b.v)).
 */
-template<class Real> inline quat<Real> operator*(const quat<Real>& a, const vec3<Real>& b)
+template<class Real> constexpr quat<Real> operator*(const quat<Real>& a, const vec3<Real>& b)
 {
     return a * quat<Real>(0, b);
 }
@@ -753,7 +753,7 @@ template<class Real> inline quat<Real> operator*(const quat<Real>& a, const vec3
 
     \returns the norm of the quaternion, squared. (a.s*a.s + dot(a.v,a.v))
 */
-template<class Real> inline Real norm2(const quat<Real>& a)
+template<class Real> constexpr Real norm2(const quat<Real>& a)
 {
     return (a.s * a.s + dot(a.v, a.v));
 }
@@ -763,7 +763,7 @@ template<class Real> inline Real norm2(const quat<Real>& a)
 
     \returns the conjugate of the quaternion. (a.s, -a.v)
 */
-template<class Real> inline quat<Real> conj(const quat<Real>& a)
+template<class Real> constexpr quat<Real> conj(const quat<Real>& a)
 {
     return quat<Real>(a.s, -a.v);
 }
@@ -772,7 +772,7 @@ template<class Real> inline quat<Real> conj(const quat<Real>& a)
 /*! \note The rotation matrix must have positive determinant
  http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/
  */
-template<class Real> inline quat<Real>::quat(const rotmat3<Real>& r)
+template<class Real> constexpr quat<Real>::quat(const rotmat3<Real>& r)
 {
     Real tr = r.row0.x + r.row1.y + r.row2.z;
 
@@ -808,7 +808,7 @@ template<class Real> inline quat<Real>::quat(const rotmat3<Real>& r)
 
     \returns the vector rotated by the quaternion, equivalent to the vector component of a*b*conj(a);
 */
-template<class Real> inline vec3<Real> rotate(const quat<Real>& a, const vec3<Real>& b)
+template<class Real> constexpr vec3<Real> rotate(const quat<Real>& a, const vec3<Real>& b)
 {
     // quat<Real> result = a*b*conj(a);
     // return result.v;
@@ -831,7 +831,7 @@ template<class Real> inline vec3<Real> rotate(const quat<Real>& a, const vec3<Re
 
     *b* is promoted to a 3d vector with z=0 for the rotation.
 */
-template<class Real> inline vec2<Real> rotate(const quat<Real>& a, const vec2<Real>& b)
+template<class Real> constexpr vec2<Real> rotate(const quat<Real>& a, const vec2<Real>& b)
 {
     vec3<Real> b3(b.x, b.y, Real(0.0));
     // b3 = (a*b3*conj(a)).v;
@@ -853,7 +853,7 @@ template<class Real> inline vec2<Real> rotate(const quat<Real>& a, const vec2<Re
 
     \returns the dot product a.s*b.s+a.v.x*b.v.x + a.v.y*b.v.y + a.v.z*b.v.z.
 */
-template<class Real> inline Real dot(const quat<Real>& a, const quat<Real>& b)
+template<class Real> constexpr Real dot(const quat<Real>& a, const quat<Real>& b)
 {
     return (a.s * b.s + dot(a.v, b.v));
 }
@@ -932,7 +932,7 @@ template<class Real> struct rotmat2
 
     Multiplication is matrix multiplication, where the vector is represented as a column vector.
 */
-template<class Real> inline vec2<Real> operator*(const rotmat2<Real>& A, const vec2<Real>& b)
+template<class Real> constexpr vec2<Real> operator*(const rotmat2<Real>& A, const vec2<Real>& b)
 {
     return vec2<Real>(dot(A.row0, b), dot(A.row1, b));
 }
@@ -944,7 +944,7 @@ template<class Real> inline vec2<Real> operator*(const rotmat2<Real>& A, const v
     A rotation matrix has an inverse equal to its transpose. There may be times where an algorithm needs to
    undo a rotation, so the transpose method is provided.
 */
-template<class Real> inline rotmat2<Real> transpose(const rotmat2<Real>& A)
+template<class Real> constexpr rotmat2<Real> transpose(const rotmat2<Real>& A)
 {
     return rotmat2<Real>(vec2<Real>(A.row0.x, A.row1.x), vec2<Real>(A.row0.y, A.row1.y));
 }
@@ -1036,7 +1036,7 @@ template<class Real> struct rotmat3
 
     Multiplication is matrix multiplication, where the vector is represented as a column vector.
 */
-template<class Real> inline vec3<Real> operator*(const rotmat3<Real>& A, const vec3<Real>& b)
+template<class Real> constexpr vec3<Real> operator*(const rotmat3<Real>& A, const vec3<Real>& b)
 {
     return vec3<Real>(dot(A.row0, b), dot(A.row1, b), dot(A.row2, b));
 }
@@ -1046,7 +1046,7 @@ template<class Real> inline vec3<Real> operator*(const rotmat3<Real>& A, const v
     \param B matrix
     \returns A*b
 */
-template<class Real> inline rotmat3<Real> operator*(const rotmat3<Real>& A, const rotmat3<Real>& B)
+template<class Real> constexpr rotmat3<Real> operator*(const rotmat3<Real>& A, const rotmat3<Real>& B)
 {
     rotmat3<Real> r;
     rotmat3<Real> B_t = transpose(B);
@@ -1069,7 +1069,7 @@ template<class Real> inline rotmat3<Real> operator*(const rotmat3<Real>& A, cons
     A rotation matrix has an inverse equal to its transpose. There may be times where an algorithm needs to
    undo a rotation, so the transpose method is provided.
 */
-template<class Real> inline rotmat3<Real> transpose(const rotmat3<Real>& A)
+template<class Real> constexpr rotmat3<Real> transpose(const rotmat3<Real>& A)
 {
     return rotmat3<Real>(vec3<Real>(A.row0.x, A.row1.x, A.row2.x), vec3<Real>(A.row0.y, A.row1.y, A.row2.y),
                          vec3<Real>(A.row0.z, A.row1.z, A.row2.z));
@@ -1083,7 +1083,7 @@ template<class Real> inline rotmat3<Real> transpose(const rotmat3<Real>& A)
     \returns the projection of a onto b
     \note projection() can be applied to 2d or 3d vectors
 */
-template<class Vec> inline Vec project(const Vec& a, const Vec& b)
+template<class Vec> constexpr Vec project(const Vec& a, const Vec& b)
 {
     return dot(a, b) / dot(b, b) * b;
 }

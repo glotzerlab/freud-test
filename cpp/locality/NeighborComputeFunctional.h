@@ -24,17 +24,6 @@ NeighborList makeDefaultNlist(const NeighborQuery* nq, const NeighborList* nlist
                               const vec3<float>* query_points, unsigned int num_query_points,
                               locality::QueryArgs qargs);
 
-//! Compute the vector corresponding to a NeighborBond.
-/*! The primary purpose of this function is to standardize the directionality
- * of the delta vector, which is defined as pointing from the query_point to
- * the point (point - query_point), wrapped into the box.
- */
-inline vec3<float> bondVector(const NeighborBond& nb, const NeighborQuery* nq,
-                              const vec3<float>* query_points)
-{
-    return nq->getBox().wrap((*nq)[nb.point_idx] - query_points[nb.query_point_idx]);
-}
-
 //! Implementation of per-point finding logic for NeighborList objects.
 /*! This class provides a concrete implementation of the per-point neighbor
  *  finding interface specified by the NeighborPerPointIterator. In particular,
@@ -68,7 +57,8 @@ public:
 
         NeighborBond nb = NeighborBond(
             m_nlist->getNeighbors()(m_current_index, 0), m_nlist->getNeighbors()(m_current_index, 1),
-            m_nlist->getDistances()[m_current_index], m_nlist->getWeights()[m_current_index]);
+            m_nlist->getDistances()[m_current_index], m_nlist->getWeights()[m_current_index],
+            m_nlist->getVectors()[m_current_index]);
         ++m_current_index;
         m_returned_point_index = nb.query_point_idx;
         return nb;
@@ -187,7 +177,7 @@ void loopOverNeighbors(const NeighborQuery* neighbor_query, const vec3<float>* q
                 for (size_t bond = begin; bond != end; ++bond)
                 {
                     const NeighborBond nb(nlist->getNeighbors()(bond, 0), nlist->getNeighbors()(bond, 1),
-                                          nlist->getDistances()[bond], nlist->getWeights()[bond]);
+                                          nlist->getDistances()[bond], nlist->getWeights()[bond], nlist->getVectors()[bond]);
                     cf(nb);
                 }
             },

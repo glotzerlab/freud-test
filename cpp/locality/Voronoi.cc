@@ -1,6 +1,7 @@
 // Copyright (c) 2010-2020 The Regents of the University of Michigan
 // This file is from the freud project, released under the BSD 3-Clause License.
 
+#include <algorithm>
 #include <cmath>
 #include <iterator>
 #include <tbb/parallel_sort.h>
@@ -124,8 +125,9 @@ void Voronoi::compute(const freud::locality::NeighborQuery* nq)
 
             // Compute cell neighbors
             size_t neighbor_counter(0);
+            size_t face_vertices_index(0);
             for (auto neighbor_iterator = neighbors.begin(); neighbor_iterator != neighbors.end();
-                 neighbor_iterator++, neighbor_counter++)
+                 neighbor_iterator++, neighbor_counter++, face_vertices_index += face_vertices[face_vertices_index] + 1)
             {
                 // Get the normal to the current face
                 const vec3<double> normal(normals[3 * neighbor_counter], normals[3 * neighbor_counter + 1],
@@ -148,13 +150,44 @@ void Voronoi::compute(const freud::locality::NeighborQuery* nq)
                 // Fetch neighbor information
                 const int point_id = *neighbor_iterator;
                 const float weight(face_areas[neighbor_counter]);
-                const vec3<double> point_system_coords((*nq)[point_id]);
 
-                // Compute the distance from query_point to point.
-                const vec3<float> rij = box.wrap(point_system_coords - query_point_system_coords);
-                const float distance(std::sqrt(dot(rij, rij)));
+                // Find a vertex on the current face: this leverages the
+                // structure of face_vertices, which has a count of the
+                // number of vertices for a face followed by the
+                // corresponding vertex ids for that face. We use this
+                // structure later when incrementing face_vertices_index.
+                // face_vertices_index always points to the "vertex
+                // counter" element of face_vertices for the current face.
 
-                bonds.emplace_back(query_point_id, point_id, distance, weight);
+                // Get the id of the vertex on this face that is most parallel to the normal
+                const auto normal_length = std::sqrt(dot(normal, normal));
+                auto cosine_vertex_to_normal = [&](const auto& vertex_id_on_face){
+                    const vec3<double> rv(vertices[3 * vertex_id_on_face], vertices[3 * vertex_id_on_face + 1],
+                                          vertices[3 * vertex_id_on_face + 2]);
+                    const vec3<double> riv(rv - query_point);
+                    return dot(riv, normal) / std::sqrt(dot(riv, riv)) / normal_length;
+                };
+
+                const int vertex_id_on_face = *std::max_element(
+                    &(face_vertices[face_vertices_index + 1]),
+                    &(face_vertices[face_vertices_index + face_vertices[face_vertices_index]]),
+                    [&](const auto& a, const auto& b){
+                        return cosine_vertex_to_normal(a) < cosine_vertex_to_normal(b);
+                    });
+
+                // Project the vertex vector onto the face normal to get a
+                // vector from query_point to the face, then double it to
+                // get the vector to the neighbor particle.
+                const vec3<double> rv(vertices[3 * vertex_id_on_face], vertices[3 * vertex_id_on_face + 1],
+                                      vertices[3 * vertex_id_on_face + 2]);
+                const vec3<double> riv(rv - query_point);
+                const vec3<float> vector(2.0 * dot(riv, normal) * normal);
+
+
+                // Compute the distance from query_point to point in the direction of the normal.
+                const float distance(std::sqrt(dot(vector, vector)));
+
+                bonds.emplace_back(query_point_id, point_id, distance, weight, vector);
             }
 
         } while (voronoi_loop.inc());
@@ -176,6 +209,7 @@ void Voronoi::compute(const freud::locality::NeighborQuery* nq)
             m_neighbor_list->getNeighbors()(bond, 1) = bonds[bond].point_idx;
             m_neighbor_list->getDistances()[bond] = bonds[bond].distance;
             m_neighbor_list->getWeights()[bond] = bonds[bond].weight;
+            m_neighbor_list->getVectors()[bond] = bonds[bond].vector;
         }
     });
 }

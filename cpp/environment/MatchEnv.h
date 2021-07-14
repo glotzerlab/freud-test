@@ -205,8 +205,7 @@ public:
 
     //! Construct and return a local environment surrounding the particle indexed by i. Set the environment
     //! index to env_ind.
-    static Environment buildEnv(const freud::locality::NeighborQuery* nq,
-                                const freud::locality::NeighborList* nlist, size_t num_bonds, size_t& bond,
+    static Environment buildEnv(const freud::locality::NeighborList* nlist, size_t num_bonds, size_t& bond,
                                 unsigned int i, unsigned int env_ind);
 
     //! Returns the entire Np by m_num_neighbors by 3 matrix of all environments for all particles

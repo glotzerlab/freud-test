@@ -87,8 +87,8 @@ void BondOrder::accumulate(const locality::NeighborQuery* neighbor_query, quat<f
     accumulateGeneral(neighbor_query, query_points, n_query_points, nlist, qargs,
                       [=](const freud::locality::NeighborBond& neighbor_bond) {
                           const quat<float>& ref_q(orientations[neighbor_bond.point_idx]);
-                          vec3<float> v(bondVector(neighbor_bond, neighbor_query, query_points));
-                          const quat<float>& q = query_orientations[neighbor_bond.query_point_idx];
+                          vec3<float> v(neighbor_bond.vector);
+                          const quat<float>& q(query_orientations[neighbor_bond.query_point_idx]);
                           if (m_mode == obcd)
                           {
                               // give bond directions of neighboring particles rotated by the matrix

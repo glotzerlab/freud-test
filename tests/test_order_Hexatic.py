@@ -164,7 +164,6 @@ class TestHexatic:
         query_point_indices = np.array([0, 0, 0, 0])
         point_indices = np.array([1, 2, 3, 4])
         rijs = box.wrap(points[point_indices] - points[query_point_indices])
-        distances = np.linalg.norm(rijs, axis=-1)
         thetas = np.arctan2(rijs[:, 1], rijs[:, 0])
         weights = np.array([1, 0.7, 0.3, 0])
         nlist = freud.NeighborList.from_arrays(
@@ -172,7 +171,7 @@ class TestHexatic:
             len(points),
             query_point_indices,
             point_indices,
-            distances,
+            rijs,
             weights,
         )
         for k in range(0, 12):

@@ -458,4 +458,4 @@ class TestEnvironmentRMSDMinimizer:
         query_args = dict(r_guess=r_max, num_neighbors=num_neighbors)
         match.compute((box, points), motif, neighbors=query_args)
         assert np.all(match.rmsds[:-1] > 0)
-        assert match.rmsds[-1] == 0
+        assert np.isclose(match.rmsds[-1], 0, atol=1e-6)

@@ -147,7 +147,7 @@ public:
                       float r_min, float scale, bool exclude_ii)
         : AABBIterator(neighbor_query, query_point, query_point_idx, r_max, r_min, exclude_ii), m_count(0),
           m_num_neighbors(num_neighbors), m_search_extended(false), m_r_cur(r_guess), m_scale(scale),
-          m_all_distances(), m_query_points_below_r_min()
+          m_all_bonds_minimum_distance(), m_query_points_below_r_min()
     {
         updateImageVectors(0);
     }
@@ -167,8 +167,8 @@ protected:
     float
         m_r_cur; //!< Current search ball cutoff distance in use for the current particle (expands as needed).
     float m_scale; //!< The amount to scale m_r by when the current ball is too small.
-    std::map<unsigned int, float> m_all_distances; //!< Hash map of minimum distances found for a given point,
-                                                   //!< used when searching beyond maximum safe AABB distance.
+    std::map<unsigned int, NeighborBond> m_all_bonds_minimum_distance; //!< Hash map of minimum distances found for a given point,
+                                                                       //!< used when searching beyond maximum safe AABB distance.
     std::unordered_set<unsigned int> m_query_points_below_r_min; //!< The set of query_points that were too
                                                                  //!< close based on the r_min threshold.
 };

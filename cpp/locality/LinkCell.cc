@@ -516,7 +516,7 @@ NeighborBond LinkCellQueryBallIterator::next()
 
             if (r_sq < r_max_sq && r_sq >= r_min_sq)
             {
-                return NeighborBond(m_query_point_idx, j, std::sqrt(r_sq));
+                return NeighborBond(m_query_point_idx, j, std::sqrt(r_sq), 1, r_ij);
             }
         }
 
@@ -604,7 +604,7 @@ NeighborBond LinkCellQueryIterator::next()
                     const float r_sq(dot(r_ij, r_ij));
                     if (r_sq < r_max_sq && r_sq >= r_min_sq)
                     {
-                        m_current_neighbors.emplace_back(m_query_point_idx, j, std::sqrt(r_sq));
+                        m_current_neighbors.emplace_back(m_query_point_idx, j, std::sqrt(r_sq), 1, r_ij);
                     }
                 }
             }

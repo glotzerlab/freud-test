@@ -476,7 +476,7 @@ cdef class NeighborList:
 
     @classmethod
     def from_arrays(cls, num_query_points, num_points, query_point_indices,
-                    point_indices, distances, weights=None):
+                    point_indices, vectors, weights=None):
         R"""Create a NeighborList from a set of bond information arrays.
 
         Example::
@@ -486,15 +486,14 @@ cdef class NeighborList:
             box = freud.box.Box(2, 3, 4, 0, 0, 0)
             query_points = np.array([[0, 0, 0], [0, 0, 1]])
             points = np.array([[0, 0, -1], [0.5, -1, 0]])
-            query_point_indices = np.array([0, 0, 1])
-            point_indices = np.array([0, 1, 1])
-            distances = box.compute_distances(
-                query_points[query_point_indices], points[point_indices])
             num_query_points = len(query_points)
             num_points = len(points)
+            query_point_indices = np.array([0, 0, 1])
+            point_indices = np.array([0, 1, 1])
+            vectors = box.wrap(points[point_indices] - query_points[query_point_indices])
             nlist = freud.locality.NeighborList.from_arrays(
                 num_query_points, num_points, query_point_indices,
-                point_indices, distances)
+                point_indices, vectors)
 
 
         Args:
@@ -509,10 +508,10 @@ cdef class NeighborList:
             point_indices (:class:`np.ndarray`):
                 Array of integers corresponding to indices in the set of
                 points.
-            distances (:class:`np.ndarray`):
-                Array of distances between corresponding query points and
+            vectors (:math:`\left(N_{bonds}, 3\right)` :class:`numpy.ndarray`):
+                Array of bond vectors from query points to corresponding
                 points.
-            weights (:class:`np.ndarray`, optional):
+            weights (:math:`\left(N_{bonds} \right)` :class:`np.ndarray`):
                 Array of per-bond weights (if :code:`None` is given, use a
                 value of 1 for each weight) (Default value = :code:`None`).
         """  # noqa 501
@@ -521,8 +520,8 @@ cdef class NeighborList:
         point_indices = freud.util._convert_array(
             point_indices, shape=query_point_indices.shape, dtype=np.uint32)
 
-        distances = freud.util._convert_array(
-            distances, shape=query_point_indices.shape)
+        vectors = freud.util._convert_array(
+            vectors, shape=(len(query_point_indices), 3))
 
         if weights is None:
             weights = np.ones(query_point_indices.shape, dtype=np.float32)
@@ -532,7 +531,7 @@ cdef class NeighborList:
         cdef const unsigned int[::1] l_query_point_indices = \
             query_point_indices
         cdef const unsigned int[::1] l_point_indices = point_indices
-        cdef const float[::1] l_distances = distances
+        cdef const float[:, ::1] l_vectors = vectors
         cdef const float[::1] l_weights = weights
         cdef unsigned int l_num_bonds = l_query_point_indices.shape[0]
         cdef unsigned int l_num_query_points = num_query_points
@@ -542,7 +541,8 @@ cdef class NeighborList:
         result = cls()
         result.thisptr = new freud._locality.NeighborList(
             l_num_bonds, &l_query_point_indices[0], l_num_query_points,
-            &l_point_indices[0], l_num_points, &l_distances[0], &l_weights[0])
+            &l_point_indices[0], l_num_points, <vec3[float]*> &l_vectors[0, 0],
+            &l_weights[0])
 
         return result
 
@@ -622,6 +622,14 @@ cdef class NeighborList:
         return freud.util.make_managed_numpy_array(
             &self.thisptr.getDistances(),
             freud.util.arr_type_t.FLOAT)
+
+    @property
+    def vectors(self):
+        R"""(:math:`N_{bonds}`, 3) :class:`np.ndarray`: The vectors for each
+        bond."""
+        return freud.util.make_managed_numpy_array(
+            &self.thisptr.getVectors(),
+            freud.util.arr_type_t.FLOAT, 3)
 
     @property
     def segments(self):

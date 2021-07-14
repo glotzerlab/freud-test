@@ -227,7 +227,7 @@ class TestSteinhardt:
                     len(positions),
                     nlist.query_point_indices,
                     nlist.point_indices,
-                    nlist.distances,
+                    nlist.vectors,
                     weights,
                 )
 
@@ -297,14 +297,14 @@ class TestSteinhardt:
                 [0, 1, 1],
             ]
         )
-        query_point_indices = np.zeros(len(positions) - 1)
+        query_point_indices = np.zeros(len(positions) - 1, dtype=int)
         point_indices = np.arange(1, len(positions))
         nlist = freud.locality.NeighborList.from_arrays(
             len(positions),
             len(positions),
             query_point_indices,
             point_indices,
-            np.full(len(query_point_indices), np.sqrt(2)),
+            box.wrap(positions[point_indices] - positions[query_point_indices]),
         )
 
         q6 = freud.order.Steinhardt(6)

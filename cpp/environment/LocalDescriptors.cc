@@ -52,8 +52,7 @@ void LocalDescriptors::compute(const locality::NeighborQuery* nq, const vec3<flo
                      && m_nlist.getNeighbors()(bond_copy, 0) == i && neighbor_count < max_num_neighbors;
                      ++bond_copy, ++neighbor_count)
                 {
-                    const size_t j(m_nlist.getNeighbors()(bond_copy, 1));
-                    const vec3<float> r_ij(bondVector(locality::NeighborBond(i, j), nq, query_points));
+                    const vec3<float> r_ij(m_nlist.getVectors()[bond_copy]);
                     const float r_sq(dot(r_ij, r_ij));
 
                     for (size_t ii(0); ii < 3; ++ii)
@@ -105,8 +104,7 @@ void LocalDescriptors::compute(const locality::NeighborQuery* nq, const vec3<flo
                  ++bond, ++neighbor_count)
             {
                 const unsigned int sphCount(bond * getSphWidth());
-                const size_t j(m_nlist.getNeighbors()(bond, 1));
-                const vec3<float> r_ij(bondVector(locality::NeighborBond(i, j), nq, query_points));
+                const vec3<float> r_ij(m_nlist.getVectors()[bond]);
                 const float r_sq(dot(r_ij, r_ij));
                 const vec3<float> bond_ij(dot(rotation_0, r_ij), dot(rotation_1, r_ij),
                                           dot(rotation_2, r_ij));

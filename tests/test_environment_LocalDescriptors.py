@@ -275,7 +275,7 @@ class TestLocalDescriptors:
                 len(points),
                 nl.query_point_indices,
                 nl.point_indices,
-                nl.distances,
+                nl.vectors,
                 np.random.rand(len(nl.weights)),
             )
 
@@ -371,7 +371,7 @@ class TestLocalDescriptors:
                     scipy_val = sph_harm(m, l, phi, theta)
                     ld_val = (-1) ** abs(m) * ld.sph[idx, count]
                     assert np.isclose(scipy_val, ld_val, atol=atol), (
-                        "Failed for l={}, m={}, x={}, y = {}" "\ntheta={}, phi={}"
+                        "Failed for l={}, m={}, x={}, y={}, theta={}, phi={}"
                     ).format(l, m, scipy_val, ld_val, theta, phi)
                     count += 1
 
@@ -380,7 +380,7 @@ class TestLocalDescriptors:
                     scipy_val = sph_harm(m, l, phi, theta)
                     ld_val = ld.sph[idx, count]
                     assert np.isclose(scipy_val, ld_val, atol=atol), (
-                        "Failed for l={}, m={}, x={}, y = {}" "\ntheta={}, phi={}"
+                        "Failed for l={}, m={}, x={}, y={}, theta={}, phi={}"
                     ).format(l, m, scipy_val, ld_val, theta, phi)
                     count += 1
 
@@ -402,15 +402,14 @@ class TestLocalDescriptors:
         # again later anyway.
         lc = freud.locality.AABBQuery(box, points)
         nl = lc.query(
-            points, dict(exclude_ii=True, num_neighbors=num_neighbors)
+            query_points, dict(exclude_ii=False, num_neighbors=num_neighbors)
         ).toNeighborList()
 
         ld = freud.environment.LocalDescriptors(l_max, mode="global")
         ld.compute((box, points), query_points, neighbors=nl)
 
         # Loop over the sphs and compute them explicitly.
-        for idx, (i, j) in enumerate(nl):
-            bond = box.wrap(points[j] - query_points[i])
+        for idx, bond in enumerate(nl.vectors):
             r = np.linalg.norm(bond)
             theta = np.arccos(bond[2] / r)
             phi = np.arctan2(bond[1], bond[0])
@@ -426,7 +425,7 @@ class TestLocalDescriptors:
                     scipy_val = sph_harm(m, l, phi, theta)
                     ld_val = (-1) ** abs(m) * ld.sph[idx, count]
                     assert np.isclose(scipy_val, ld_val, atol=atol), (
-                        "Failed for l={}, m={}, x={}, y = {}" "\ntheta={}, phi={}"
+                        "Failed for l={}, m={}, x={}, y={}, theta={}, phi={}"
                     ).format(l, m, scipy_val, ld_val, theta, phi)
                     count += 1
 
@@ -435,6 +434,6 @@ class TestLocalDescriptors:
                     scipy_val = sph_harm(m, l, phi, theta)
                     ld_val = ld.sph[idx, count]
                     assert np.isclose(scipy_val, ld_val, atol=atol), (
-                        "Failed for l={}, m={}, x={}, y = {}" "\ntheta={}, phi={}"
+                        "Failed for l={}, m={}, x={}, y={}, theta={}, phi={}"
                     ).format(l, m, scipy_val, ld_val, theta, phi)
                     count += 1

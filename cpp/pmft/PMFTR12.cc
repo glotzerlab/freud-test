@@ -83,15 +83,13 @@ void PMFTR12::accumulate(const locality::NeighborQuery* neighbor_query, const fl
     neighbor_query->getBox().enforce2D();
     accumulateGeneral(neighbor_query, query_points, n_query_points, nlist, qargs,
                       [=](const freud::locality::NeighborBond& neighbor_bond) {
-                          vec3<float> delta(bondVector(neighbor_bond, neighbor_query, query_points));
+                          const vec3<float>& delta(neighbor_bond.vector);
                           // calculate angles
-                          float d_theta1 = std::atan2(delta.y, delta.x);
-                          float d_theta2 = std::atan2(-delta.y, -delta.x);
-                          float t1 = orientations[neighbor_bond.point_idx] - d_theta1;
-                          float t2 = query_orientations[neighbor_bond.query_point_idx] - d_theta2;
+                          const float d_theta1 = std::atan2(delta.y, delta.x);
+                          const float d_theta2 = std::atan2(-delta.y, -delta.x);
                           // make sure that t1, t2 are bounded between 0 and 2PI
-                          t1 = util::modulusPositive(t1, constants::TWO_PI);
-                          t2 = util::modulusPositive(t2, constants::TWO_PI);
+                          const float t1 = util::modulusPositive(orientations[neighbor_bond.point_idx] - d_theta1, constants::TWO_PI);
+                          const float t2 = util::modulusPositive(query_orientations[neighbor_bond.query_point_idx] - d_theta2, constants::TWO_PI);
                           m_local_histograms(neighbor_bond.distance, t1, t2);
                       });
 }
