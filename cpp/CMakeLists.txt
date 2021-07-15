@@ -8,6 +8,7 @@ endif()
 
 add_subdirectory(cluster)
 add_subdirectory(density)
+add_subdirectory(diffraction)
 add_subdirectory(environment)
 add_subdirectory(locality)
 add_subdirectory(order)
@@ -19,6 +20,7 @@ add_library(
   libfreud SHARED
   $<TARGET_OBJECTS:_cluster>
   $<TARGET_OBJECTS:_density>
+  $<TARGET_OBJECTS:_diffraction>
   $<TARGET_OBJECTS:_environment>
   $<TARGET_OBJECTS:_locality>
   $<TARGET_OBJECTS:_order>

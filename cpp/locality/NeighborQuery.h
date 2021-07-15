@@ -51,6 +51,20 @@ struct QueryArgs
 {
     QueryArgs() = default;
 
+   //! Constructor
+    QueryArgs(QueryType mode, unsigned int num_neighbors, float r_max, float r_min, float r_guess,
+              float scale, bool exclude_ii)
+        : mode(mode), num_neighbors(num_neighbors), r_max(r_max), r_min(r_min), r_guess(r_guess),
+          scale(scale), exclude_ii(exclude_ii)
+    {}
+
+    //! Ball query factory
+    static QueryArgs make_ball(float r_max, float r_min = 0, bool exclude_ii = DEFAULT_EXCLUDE_II)
+    {
+        return QueryArgs(QueryType::ball, DEFAULT_NUM_NEIGHBORS, r_max, r_min, DEFAULT_R_GUESS, DEFAULT_SCALE,
+                         exclude_ii);
+    }
+
     QueryType mode {DEFAULT_MODE}; //! Whether to perform a ball or k-nearest neighbor query.
     unsigned int num_neighbors {DEFAULT_NUM_NEIGHBORS}; //! The number of nearest neighbors to find.
     float r_max {DEFAULT_R_MAX};          //! The cutoff distance within which to find neighbors.

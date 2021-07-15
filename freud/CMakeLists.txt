@@ -52,13 +52,14 @@ set(cython_modules_with_cpp
     box
     cluster
     density
+    diffraction
     environment
     locality
     order
     parallel
     pmft)
 
-set(cython_modules_without_cpp diffraction interface msd util)
+set(cython_modules_without_cpp interface msd util)
 
 foreach(cython_module ${cython_modules_with_cpp} ${cython_modules_without_cpp})
   add_cython_target(${cython_module} PY3 CXX)

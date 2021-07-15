@@ -8,6 +8,7 @@ Diffraction Module
     :nosignatures:
 
     freud.diffraction.DiffractionPattern
+    freud.diffraction.StaticStructureFactor
 
 .. rubric:: Details
 

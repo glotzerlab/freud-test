@@ -72,13 +72,13 @@ public:
     virtual size_t bin(const float& value) const = 0;
 
     //! Return the boundaries of bins.
-    std::vector<float> getBinEdges() const
+    const std::vector<float> getBinEdges() const
     {
         return m_bin_edges;
     }
 
     //! Return the centers of bins.
-    std::vector<float> getBinCenters() const
+    const std::vector<float> getBinCenters() const
     {
         std::vector<float> bin_centers(m_nbins);
         for (size_t i = 0; i < m_nbins; i++)
@@ -369,7 +369,7 @@ public:
     }
 
     //! Get the shape of the computed histogram.
-    std::vector<size_t> shape() const
+    const std::vector<size_t> shape() const
     {
         return m_bin_counts.shape();
     }
@@ -383,7 +383,7 @@ public:
     //! Return the edges of bins.
     /*! This vector will be of size axis.size()+1 for each axis.
      */
-    std::vector<std::vector<float>> getBinEdges() const
+    const std::vector<std::vector<float>> getBinEdges() const
     {
         std::vector<std::vector<float>> bins(m_axes.size());
         for (unsigned int i = 0; i < m_axes.size(); ++i)
@@ -396,7 +396,7 @@ public:
     //! Return the bin centers.
     /*! This vector will be of size axis.size() for each axis.
      */
-    std::vector<std::vector<float>> getBinCenters() const
+    const std::vector<std::vector<float>> getBinCenters() const
     {
         std::vector<std::vector<float>> bins(m_axes.size());
         for (unsigned int i = 0; i < m_axes.size(); ++i)
@@ -407,7 +407,7 @@ public:
     }
 
     //! Return a vector of tuples (min, max) indicating the bounds of each axis.
-    std::vector<std::pair<float, float>> getBounds() const
+    const std::vector<std::pair<float, float>> getBounds() const
     {
         std::vector<std::pair<float, float>> bounds(m_axes.size());
         for (unsigned int i = 0; i < m_axes.size(); ++i)
@@ -418,7 +418,7 @@ public:
     }
 
     //! Return a vector indicating the number of bins in each axis.
-    std::vector<size_t> getAxisSizes() const
+    const std::vector<size_t> getAxisSizes() const
     {
         std::vector<size_t> sizes(m_axes.size());
         for (unsigned int i = 0; i < m_axes.size(); ++i)
@@ -489,7 +489,7 @@ protected:
      * variadic templating to accept an arbitrary set of float values and
      * construct a vector out of them.
      */
-    std::pair<std::vector<float>, Weight<T>> getValueVector(float value) const
+    const std::pair<std::vector<float>, Weight<T>> getValueVector(float value) const
     {
         return {{value}, Weight<T>()};
     }
@@ -499,14 +499,14 @@ protected:
      * variadic templating to accept an arbitrary set of float values and
      * construct a vector out of them.
      */
-    std::pair<std::vector<float>, Weight<T>> getValueVector(Weight<T> weight) const
+    const std::pair<std::vector<float>, Weight<T>> getValueVector(Weight<T> weight) const
     {
         return {{}, weight};
     }
 
     //! The recursive case for constructing a vector of values (see base-case function docs).
     template<typename... FloatsOrWeight>
-    std::pair<std::vector<float>, Weight<T>> getValueVector(float value, FloatsOrWeight... values) const
+    const std::pair<std::vector<float>, Weight<T>> getValueVector(float value, FloatsOrWeight... values) const
     {
         std::pair<std::vector<float>, Weight<T>> tmp = getValueVector(values...);
         tmp.first.insert(tmp.first.begin(), value);
@@ -515,7 +515,8 @@ protected:
 
     //! The recursive case for constructing a vector of values (see base-case function docs).
     template<typename... FloatsOrWeight>
-    std::pair<std::vector<float>, Weight<T>> getValueVector(Weight<T> weight, FloatsOrWeight... values) const
+    const std::pair<std::vector<float>, Weight<T>> getValueVector(Weight<T> weight,
+                                                                  FloatsOrWeight... values) const
     {
         std::pair<std::vector<float>, Weight<T>> tmp = getValueVector(values...);
         tmp.second = weight;
